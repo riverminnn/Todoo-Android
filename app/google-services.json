@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "97975332094",
+    "firebase_url": "https://todoo-8f31f-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "todoo-8f31f",
+    "storage_bucket": "todoo-8f31f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:97975332094:android:2e1cc498a4f8764c3609af",
+        "android_client_info": {
+          "package_name": "com.example.todooapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfpBjC4-m5pRmFghVI0gdrjnQA4C-7Eo4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
