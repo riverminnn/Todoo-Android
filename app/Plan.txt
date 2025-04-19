@@ -1,0 +1,265 @@
+Recommended Architecture
+UI Pattern: Single-Activity with Fragments using Navigation Component
+
+
+Architecture: MVVM with Repository pattern
+
+
+Data Storage: Room for local storage + Firebase for cloud sync
+
+
+Background Processing:
+
+
+WorkManager for syncing
+
+
+Services for widget updates
+
+
+Dependencies:
+
+
+Navigation Component
+
+
+ViewModel
+
+
+LiveData
+
+
+Room
+
+
+Firebase
+
+
+WorkManager
+
+
+
+Detailed Sprint Plan
+Sprint 1 (Week 1): Core App Structure and Local Storage
+Convert to Fragment-based architecture
+
+
+Create navigation graph with main fragments
+
+
+Implement TodoListFragment for the main list view
+
+
+Create TodoFormFragment for adding/editing todos
+
+
+Set up Room Database
+
+
+Create Todo entity with completion status field
+
+
+Implement DAO with CRUD operations
+
+
+Create database migration strategy
+
+
+Implement MVVM architecture
+
+
+Create TodoRepository to manage data sources
+
+
+Build TodoViewModel with LiveData
+
+
+Connect UI to ViewModel
+
+
+
+Sprint 2 (Week 2): Enhanced UI and Firebase Sync
+Improve UI with animations
+
+
+Add Material Design components
+
+
+Implement list item animations
+
+
+Create task completion animations
+
+
+Add swipe-to-delete functionality
+
+
+Implement Firebase sync
+
+
+Create sync repository
+
+
+Implement WorkManager for background sync
+
+
+Add conflict resolution strategy
+
+
+Enable offline capabilities
+
+
+Add task categories and priorities
+
+
+Extend data model with categories
+
+
+Create UI for filtering by category
+
+
+Implement priority system
+
+
+
+Sprint 3 (Week 3): Widget and Location Features
+Create home screen widget
+
+
+Design widget layouts
+
+
+Build AppWidgetProvider implementation
+
+
+Create widget configuration activity
+
+
+Set up background service for updates
+
+
+Implement location features
+
+
+Add location permissions handling
+
+
+Integrate Google Maps API
+
+
+Create location picker UI
+
+
+Build geofencing service for reminders
+
+
+Add photo attachments
+
+
+Implement camera integration
+
+
+Create photo storage system
+
+
+Add thumbnail generation
+
+
+Update UI to display attachments
+
+
+
+Sprint 4 (Week 4): Team Features and Polish
+Implement team sharing
+
+
+Create user accounts system
+
+
+Add sharing UI and permissions
+
+
+Implement FCM for notifications
+
+
+Set up real-time updates
+
+
+Create progress visualization
+
+
+Design custom Canvas-based charts
+
+
+Implement statistics tracking
+
+
+Add progress dashboard
+
+
+Final polish and deployment
+
+
+Complete app testing
+
+
+Optimize performance
+
+
+Prepare Play Store assets
+
+
+Deploy to Play Store
+
+
+
+Implementation Steps for Sprint 1
+Convert MainActivity to container for fragments
+
+
+Replace direct RecyclerView usage with FragmentContainerView
+
+
+Set up Navigation component
+
+
+Create TodoListFragment
+
+
+Move RecyclerView logic from MainActivity to TodoListFragment
+
+
+Add ViewModel connection with LiveData observation
+
+
+Implement Room database
+
+
+Create Todo entity with completion field
+
+
+Build DAO with CRUD operations
+
+
+Set up database class
+
+
+Create Repository
+
+
+Build repository to fetch from Room and Firebase
+
+
+Implement sync logic between data sources
+
+
+Update TodoModel to support completion status
+
+
+Add completed field and update UI to show completion status
+
+
+Implement toggle functionality
+
+
+

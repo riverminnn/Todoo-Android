@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/todoListFragment">
+
+    <!-- Add to res/navigation/nav_graph.xml -->
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.todooapp.fragments.LoginFragment"
+        android:label="Login"
+        tools:layout="@layout/fragment_login" />
+
+    <action
+        android:id="@+id/action_todoListFragment_to_loginFragment"
+        app:destination="@id/loginFragment" />
+
+    <action
+        android:id="@+id/action_todoListFragment_to_categoryManagementFragment"
+        app:destination="@id/categoryManagementFragment" />
+
+    <fragment
+        android:id="@+id/categoryManagementFragment"
+        android:name="com.example.todooapp.fragments.CategoryManagementFragment"
+        android:label="Manage Categories"
+        tools:layout="@layout/fragment_category_management" />
+
+    <fragment
+        android:id="@+id/todoListFragment"
+        android:name="com.example.todooapp.fragments.TodoListFragment"
+        android:label="Todo List"
+        tools:layout="@layout/fragment_todo_list">
+        <action
+            android:id="@+id/action_todoListFragment_to_todoFormFragment"
+            app:destination="@id/todoFormFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/todoFormFragment"
+        android:name="com.example.todooapp.fragments.TodoFormFragment"
+        android:label="Add Todo"
+        tools:layout="@layout/fragment_todo_form">
+        <argument
+            android:name="todoId"
+            app:argType="string"
+            app:nullable="true" />
+    </fragment>
+</navigation>

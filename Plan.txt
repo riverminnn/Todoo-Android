@@ -1,0 +1,73 @@
+Revised Plan: 3 Days (April 17–April 20, 2025)
+Timeline: April 17 (today) to April 20, 2025 (~72 hours).
+Goal: Build a core To-Do app (login, note management, offline sync, basic widget) at ~75% completion, with simplified stretch goals (voice, location, images, search, categories) for ~85% if time allows.
+Architecture:
+UI: Single-Activity with Fragments (Navigation Component).
+Pattern: MVVM with Repository.
+Data: Room (local) + Firebase Realtime Database (cloud, overwrites server on sync).
+Background: WorkManager (sync), Service (widget updates).
+Dependencies: Navigation, ViewModel, LiveData, Room, Firebase, WorkManager.
+Simplified Features:
+Note Title: Editable title, defaults to “No Title” if empty.
+Undo/Redo: Basic undo for note creation/deletion (skip redo to save time).
+Note Content: Text + stretch goals (voice URI, location coords, image URI).
+Widget: Display recent notes (title only, no interaction).
+Custom Categories: Simple string-based categories, default “Uncategorized.”
+Search Bar: Basic title search (stretch for full-text).
+Layout: Navigation buttons (profile, settings), app title, search bar, category list, notes, “+” button.
+Feasibility Check
+Core App (75%): Login, note management (CRUD, titles, categories), offline Room storage, Firebase sync (overwrite server), and a display-only widget are doable in 3 days with Claude’s code generation. This covers CLO1 (UI), CLO2 (data/sync), and CLO3 (complexity).
+Stretch Goals (~85%): Simplified voice (store URI), location (coords), images (URI), search, and undo are possible but will be basic (e.g., no full geofencing, no rich media UI).
+AI Advantage: Claude 3.7 Sonnet can generate complete Java classes (e.g., Room entity, Fragment) and debug errors, cutting development time significantly.
+Challenges: Firebase setup, widget configuration, and sync logic (overwriting server) are time sinks. Simplifying the widget (no clicks) and stretch goals (URI-based media) mitigates this.
+Assumption: You have basic Android experience (e.g., Activities, RecyclerView) from your course. If not, Claude’s explanations will help, but you’ll need to move fast.
+3-Day Plan
+Assume 8–10 hours daily, using Claude for code and debugging. The plan prioritizes the core app, with stretch goals on Day 3.
+
+Day 1 (April 17, 2025): Project Setup, Login, and Core UI
+Goal: Set up project, implement login, and build UI layout (~40% completion).
+Tasks (8–10 hours):
+Create Android Studio project (Java, Single-Activity).
+Configure dependencies (Navigation, Room, ViewModel, LiveData, Firebase).
+Set up Navigation Component with Fragments:
+LoginFragment (email/password, mock auth).
+NoteListFragment (RecyclerView, search bar, categories, “+” button).
+NoteFormFragment (title input, category picker).
+Implement layout: Navigation buttons (profile/settings placeholders), app title, search bar (placeholder), categories (RecyclerView), notes (RecyclerView), “+” button.
+Set up Firebase (Realtime Database, Authentication).
+Implement mock login (store user ID in SharedPreferences).
+Time Estimate: 2h (setup), 3h (Fragments/UI), 2h (Firebase/login), 1h (testing).
+Outcome: App with login and basic UI (CLO1).
+Day 2 (April 18, 2025): Note Management and Offline Sync
+Goal: Add note CRUD, categories, offline storage, and sync (~75% completion).
+Tasks (8–10 hours):
+Set up Room database (Note entity: id, title, content, category, timestamp).
+Implement MVVM:
+NoteRepository (Room + Firebase, overwrite server on sync).
+NoteViewModel with LiveData.
+Add note functionality:
+Create/edit notes (NoteFormFragment, title defaults to “No Title”).
+Display notes by category (NoteListFragment).
+Basic undo (track last action in ViewModel).
+Set up WorkManager for periodic sync (overwrite Firebase on connect).
+Test offline mode (Room) and sync.
+Time Estimate: 3h (Room/MVVM), 3h (note functionality), 2h (sync/testing).
+Outcome: Core app with notes, categories, offline sync (CLO2, CLO3).
+Day 3 (April 19–20, 2025): Widget and Stretch Goals
+Goal: Add basic widget and attempt stretch goals (~75–85% completion).
+Tasks (8–10 hours):
+Morning April 19: Implement widget (3h):
+Create widget layout (recent note titles).
+Set up AppWidgetProvider with RemoteViews.
+Fetch notes from Room.
+Afternoon April 19: Test and polish (2h):
+Test login → notes → widget flow.
+Fix bugs (e.g., sync conflicts).
+April 20: Stretch goals (3–5h):
+Add search (title-based, NoteListFragment).
+Store voice URI (record via Intent, save path).
+Store location coords (via Google Maps picker, no geofencing).
+Store image URI (gallery picker).
+Prepare APK for demo.
+Time Estimate: 3h (widget), 2h (testing), 3h (stretch goals).
+Outcome: App with widget (CLO1, CLO3), partial stretch goals (CLO3, CLO4).

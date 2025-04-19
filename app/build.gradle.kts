@@ -45,4 +45,30 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    // Navigation Component
+    implementation("androidx.navigation:navigation-fragment:2.7.7")
+    implementation("androidx.navigation:navigation-ui:2.7.7")
+    implementation ("com.google.android.material:material:1.6.0" )
+
+    // Room
+    implementation("androidx.room:room-runtime:2.6.1")
+    annotationProcessor("androidx.room:room-compiler:2.6.1")
+
+    // ViewModel and LiveData
+    implementation("androidx.lifecycle:lifecycle-viewmodel:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-livedata:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-common-java8:2.7.0")
+
+    // WorkManager for background tasks
+    implementation("androidx.work:work-runtime:2.9.0")
+
+    // Firebase App Check
+    implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
+    implementation("com.google.firebase:firebase-appcheck-playintegrity:18.0.0")
+
+    // Add reCAPTCHA dependency
+    implementation("com.google.firebase:firebase-appcheck-debug:18.0.0")
+    implementation("com.google.android.recaptcha:recaptcha:18.7.0")
+
+    implementation ("com.google.firebase:firebase-auth-ktx")
 }
