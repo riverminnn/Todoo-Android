@@ -13,9 +13,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
+import com.google.android.material.card.MaterialCardView;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder> {
@@ -65,28 +69,54 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
         Todo todo = todoList.get(position);
         holder.tvTitle.setText(todo.getTitle());
         holder.tvContent.setText(todo.getContent());
-        holder.tvCategory.setText(todo.getCategory());
-        holder.checkboxCompleted.setChecked(todo.isCompleted());
+
+
+        // Check if content is empty or null and display "No text" if needed
+        String content = todo.getContent();
+        if (content == null || content.trim().isEmpty()) {
+            holder.tvContent.setText("No text");
+        } else {
+            holder.tvContent.setText(content);
+        }
+
+
+        // Access the checkbox and card view
+        CheckBox checkboxSelected = holder.checkboxSelected;
+        MaterialCardView cardView = (MaterialCardView) holder.itemView;
 
         // Handle selection mode appearance
         if (selectionMode) {
-            holder.itemView.setBackgroundColor(selectedTodos.contains(todo) ?
-                    Color.parseColor("#DDDDFF") : Color.TRANSPARENT);
+            // Show checkbox in selection mode
+            checkboxSelected.setVisibility(View.VISIBLE);
+            checkboxSelected.setChecked(selectedTodos.contains(todo));
+
+            if (selectedTodos.contains(todo)) {
+                // Darken the card when selected
+                cardView.setCardBackgroundColor(Color.parseColor("#F0F0F0"));
+            } else {
+                // Normal color when not selected
+                cardView.setCardBackgroundColor(Color.WHITE);
+            }
+
+            // Add specific click listener for checkbox
+            checkboxSelected.setOnClickListener(v -> {
+                toggleSelection(todo);
+            });
         } else {
-            holder.itemView.setBackgroundColor(Color.TRANSPARENT);
+            // Hide checkbox when not in selection mode
+            checkboxSelected.setVisibility(View.GONE);
+            cardView.setCardBackgroundColor(Color.WHITE);
+            // Remove checkbox click listener when not in selection mode
+            checkboxSelected.setOnClickListener(null);
         }
 
-        // Set click listeners
-        holder.checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (buttonView.isPressed() && listener != null) {
-                listener.onTodoStatusChanged(todo, isChecked);
-            }
-        });
-
-        // Set click listeners
+        // Set click listeners for the item
         holder.itemView.setOnClickListener(v -> {
             if (selectionMode) {
-                toggleSelection(todo);
+                // Only toggle if the click was not on the checkbox
+                if (!(v.getId() == R.id.checkboxSelected)) {
+                    toggleSelection(todo);
+                }
             } else if (listener != null) {
                 listener.onTodoClick(todo);
             }
@@ -105,6 +135,11 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
             }
             return false;
         });
+
+        // Format and display the creation date
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+        String formattedDate = dateFormat.format(new Date(todo.getCreationDate()));
+        holder.tvDate.setText("Created: " + formattedDate);
     }
 
     private void toggleSelection(Todo todo) {
@@ -127,15 +162,21 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
     }
 
     static class TodoViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvContent, tvCategory;
-        CheckBox checkboxCompleted;
+        TextView tvTitle, tvContent, tvDate;
+        CheckBox checkboxSelected;
 
-        public TodoViewHolder(@NonNull View itemView) {
+        TodoViewHolder(View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvContent = itemView.findViewById(R.id.tvContent);
-            tvCategory = itemView.findViewById(R.id.tvCategory);
-            checkboxCompleted = itemView.findViewById(R.id.checkboxCompleted);
+            tvDate = itemView.findViewById(R.id.tvDate);
+            checkboxSelected = itemView.findViewById(R.id.checkboxSelected);
         }
+    }
+
+    public void selectAll(Set<Todo> allTodos) {
+        selectedTodos.clear();
+        selectedTodos.addAll(allTodos);
+        notifyDataSetChanged();
     }
 }

@@ -13,6 +13,16 @@ public class Todo {
     private String category;
     private long timestamp;
 
+    private long creationDate;
+
+    public long getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(long creationDate) {
+        this.creationDate = creationDate;
+    }
+
     public long getId() {
         return id;
     }

@@ -1,57 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#f7f7f7">
 
+    <!-- Toolbar Section -->
     <LinearLayout
+        android:id="@+id/toolbarLayout"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:orientation="vertical"
-        android:padding="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottomActionBar">
+        android:layout_height="?attr/actionBarSize"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="#F7F7F7"
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
+            android:id="@+id/btnCancelSelection"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Select or Create Category"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp"/>
+            android:background="@drawable/back_button_ripple"
+            android:fontFamily="@font/fa_free_solid_400"
+            android:padding="12dp"
+            android:gravity="start"
+            android:text="&#xf00d;"
+            android:textColor="@android:color/black"
+            android:textSize="20sp"
+            android:visibility="gone"
+            tools:visibility="gone" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:background="@drawable/back_button_ripple"
+            android:fontFamily="@font/fa_free_solid_400"
+            android:padding="12dp"
+            android:text="&#xf060;"
+            android:textColor="@android:color/black"
+            android:textSize="20sp" />
 
-            <EditText
-                android:id="@+id/etNewCategory"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="New Category"/>
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/google_sans"
+            android:gravity="center"
+            android:text="Folders"
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
-            <Button
-                android:id="@+id/btnAddCategory"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Add"/>
-        </LinearLayout>
+        <TextView
+            android:id="@+id/btnSelectAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/back_button_ripple"
+            android:fontFamily="@font/fa_free_solid_400"
+            android:padding="12dp"
+            android:text="&#xf0ae;"
+            android:textColor="#4A4A4A"
+            android:textSize="20sp"
+            android:visibility="gone"
+            tools:visibility="gone" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvCategories"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"/>
+        <TextView
+            android:id="@+id/btnTrashCan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/back_button_ripple"
+            android:fontFamily="@font/fa_free_solid_400"
+            android:padding="12dp"
+            android:text="&#xf1f8;"
+            android:textColor="#4A4A4A"
+            android:textSize="20sp" />
     </LinearLayout>
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
+
+    <!-- Main Content - Category List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCategories"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingBottom="88dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbarLayout"
+        tools:listitem="@layout/category_list_item" />
+
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:background="@color/white">
+
+        <LinearLayout
+            android:id="@+id/action_add_folder_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/action_add_folder"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="&#xf067;"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:background="@drawable/circle_yellow"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="New folder"
+                android:textSize="12sp"
+                android:textColor="#4A4A4A"
+                android:textStyle="bold"
+                android:layout_marginTop="4sp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+
+    <!-- Bottom Action Bar for Selection Mode -->
+    <LinearLayout
         android:id="@+id/bottomActionBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="#F7F7F7"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="16dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/menu_category_actions" />
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:id="@+id/action_edit_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/action_edit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="&#xf044;"
+                android:textColor="#4A4A4A"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rename"
+                android:textColor="#4A4A4A"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/action_delete_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/action_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="&#xf1f8;"
+                android:textColor="#4A4A4A"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Delete"
+                android:textColor="#4A4A4A"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

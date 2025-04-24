@@ -10,6 +10,7 @@ import com.example.todooapp.data.model.Todo;
 import com.example.todooapp.data.repository.TodoRepository;
 
 import java.util.List;
+import java.util.Set;
 
 public class TodoViewModel extends AndroidViewModel {
     private TodoRepository repository;
@@ -67,5 +68,33 @@ public class TodoViewModel extends AndroidViewModel {
 
     public LiveData<List<Todo>> getTodosByCategory(String category) {
         return repository.getTodosByCategory(category);
+    }
+
+    public boolean addCategory(String category) {
+        if (category == null || category.trim().isEmpty()) {
+            return false;
+        }
+
+        // Normalize the category name
+        String trimmedCategory = category.trim();
+
+        // Check if category already exists
+        if (categoryExists(trimmedCategory)) {
+            return false;
+        }
+
+        // Save the new category
+        repository.saveCategory(trimmedCategory);
+        return true;
+    }
+
+    public boolean categoryExists(String category) {
+        if (category == null || category.trim().isEmpty()) {
+            return false;
+        }
+
+        // Get the current categories synchronously
+        Set<String> savedCategories = ((TodoRepository)repository).getCategoriesFromPrefs();
+        return savedCategories.contains(category.trim());
     }
 }

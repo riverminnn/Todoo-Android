@@ -1,12 +1,12 @@
 package com.example.todooapp.fragments;
 
-import android.app.AlertDialog;
+import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,15 +28,18 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClickListener {
     private RecyclerView recyclerView;
+
+    private boolean allTodosSelected = false;
     private SearchView searchView;
     private FloatingActionButton btnAdd;
-    private ImageButton btnCategoryManager;
-    private BottomNavigationView bottomActionBar;
+    private TextView btnCategoryManager;
+    private View bottomActionBar;
     private ChipGroup categoryChipGroup;
 
     private TodoViewModel todoViewModel;
@@ -54,18 +57,16 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         super.onViewCreated(view, savedInstanceState);
 
         // Add to onViewCreated in TodoListFragment
-        ImageButton btnUserAuth = view.findViewById(R.id.btnUserAuth);
         UserManager userManager = new UserManager(requireContext());
-
-        // Set icon based on login status
-        updateUserAuthButton(btnUserAuth, userManager);
+        bottomActionBar = view.findViewById(R.id.bottomActionBar);
+        TextView moveButton = view.findViewById(R.id.action_move);
+        TextView deleteButton = view.findViewById(R.id.action_delete);
 
         // Get references to UI elements
         recyclerView = view.findViewById(R.id.recyclerView);
         searchView = view.findViewById(R.id.searchView);
         btnAdd = view.findViewById(R.id.btnAdd);
         btnCategoryManager = view.findViewById(R.id.btnCategoryManager);
-        bottomActionBar = view.findViewById(R.id.bottomActionBar);
         categoryChipGroup = view.findViewById(R.id.categoryChipGroup);
 
         // Initialize ViewModel - must be initialized before setupCategoryFilter
@@ -107,47 +108,36 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
             Navigation.findNavController(view).navigate(R.id.action_todoListFragment_to_categoryManagementFragment);
         });
 
-        // Bottom action bar for selections
-        bottomActionBar.setOnItemSelectedListener(item -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.action_move) {
-                moveSelectedTodos();
-                return true;
-            } else if (itemId == R.id.action_delete) {
-                deleteSelectedTodos();
-                return true;
-            }
-            return false;
-        });
-        // User authentication button click
-        btnUserAuth.setOnClickListener(v -> {
-            if (userManager.isLoggedIn()) {
-                // Show logout confirmation
-                new AlertDialog.Builder(requireContext())
-                        .setTitle("Logout")
-                        .setMessage("Are you sure you want to logout?")
-                        .setPositiveButton("Yes", (dialog, which) -> {
-                            userManager.clearUserSession();
-                            Toast.makeText(requireContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
-                            updateUserAuthButton(btnUserAuth, userManager);
-                        })
-                        .setNegativeButton("No", null)
-                        .show();
-            } else {
-                // Navigate to login screen
-                Navigation.findNavController(requireView())
-                        .navigate(R.id.action_todoListFragment_to_loginFragment);
-            }
-        });
-    }
+        moveButton.setOnClickListener(v -> moveSelectedTodos());
+        deleteButton.setOnClickListener(v -> deleteSelectedTodos());
 
-    // Add this helper method to TodoListFragment
-    private void updateUserAuthButton(ImageButton button, UserManager userManager) {
-        if (userManager.isLoggedIn()) {
-            button.setImageResource(android.R.drawable.ic_menu_myplaces); // Logged in icon
-        } else {
-            button.setImageResource(android.R.drawable.ic_menu_help); // Not logged in icon
-        }
+        // Add references to selection mode buttons
+        TextView btnCancelSelection = view.findViewById(R.id.btnCancelSelection);
+        TextView btnSelectAll = view.findViewById(R.id.btnSelectAll);
+
+        // Cancel selection mode
+        btnCancelSelection.setOnClickListener(v -> {
+            adapter.setSelectionMode(false);
+            onSelectionModeChanged(false, new HashSet<>());
+        });
+
+        // Select all/none toggle
+        btnSelectAll.setOnClickListener(v -> {
+            if (allTodosSelected) {
+                // Unselect all todos
+                adapter.selectAll(new HashSet<>());
+                // Update visual state immediately
+                btnSelectAll.setTextColor(Color.parseColor("#4A4A4A")); // Original color
+            } else {
+                // Select all todos
+                Set<Todo> allTodos = new HashSet<>(todoList);
+                adapter.selectAll(allTodos);
+                // Update visual state immediately
+                btnSelectAll.setTextColor(Color.parseColor("#2196F3")); // Blue 400
+            }
+            // Toggle the state
+            allTodosSelected = !allTodosSelected;
+        });
     }
 
     private void setupCategoryFilter() {
@@ -176,7 +166,23 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         chip.setText(category);
         chip.setCheckable(true);
         chip.setClickable(true);
-        chip.setChipBackgroundColorResource(R.color.design_default_color_primary);
+
+        // Use chip-specific styling methods
+        chip.setChipBackgroundColorResource(R.color.chip_background_color);
+        chip.setChipStrokeWidth(0f);  // No border
+        chip.setElevation(0f);  // No shadow/elevation
+
+        // Set text color
+        chip.setTextColor(getResources().getColorStateList(R.color.chip_text_color, null));
+
+        // Set chip padding - 24sp instead of 12sp
+        chip.setChipMinHeight(108f);
+        chip.setChipStartPadding(24f);
+        chip.setChipEndPadding(24f);
+        chip.setPadding(0, 12, 0, 12);
+
+        // Remove ripple effect
+        chip.setRippleColor(null);
 
         // Set chip click listener
         chip.setOnClickListener(v -> {
@@ -266,13 +272,80 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
 
     @Override
     public void onSelectionModeChanged(boolean active, Set<Todo> selectedItems) {
+        TextView titleText = requireView().findViewById(R.id.title);
+        TextView btnCancel = requireView().findViewById(R.id.btnCancelSelection);
+        TextView btnSelectAll = requireView().findViewById(R.id.btnSelectAll);
+        TextView btnSettings = requireView().findViewById(R.id.btnSettings);
+
         if (active) {
+            // Update title with proper singular/plural form
+            int count = selectedItems.size();
+            titleText.setText(count == 1 ? "1 item selected" : count + " items selected");
+
+            // Check if all todos in the current list are selected
+            allTodosSelected = !todoList.isEmpty() && selectedItems.size() == todoList.size();
+
+            // Update select all button appearance based on state
+            if (allTodosSelected) {
+                btnSelectAll.setTextColor(Color.parseColor("#2196F3")); // Blue 400
+            } else {
+                btnSelectAll.setTextColor(Color.parseColor("#4A4A4A")); // Original color
+            }
+
+            // Show selection mode controls
+            btnCancel.setVisibility(View.VISIBLE);
+            btnSelectAll.setVisibility(View.VISIBLE);
+
+            // Hide regular toolbar buttons
+            btnCategoryManager.setVisibility(View.GONE);
+            btnSettings.setVisibility(View.GONE);
+            searchView.setVisibility(View.GONE);
+
+            // Show bottom action bar and hide FAB
             bottomActionBar.setVisibility(View.VISIBLE);
             btnAdd.hide();
         } else {
+            // Restore original title and UI
+            titleText.setText("Todoo");
+
+            // Hide selection mode controls
+            btnCancel.setVisibility(View.GONE);
+            btnSelectAll.setVisibility(View.GONE);
+
+            // Show regular toolbar buttons
+            btnCategoryManager.setVisibility(View.VISIBLE);
+            btnSettings.setVisibility(View.VISIBLE);
+            searchView.setVisibility(View.VISIBLE);
+
+            // Hide bottom action bar and show FAB
             bottomActionBar.setVisibility(View.GONE);
             btnAdd.show();
+
+            // Reset selection state
+            allTodosSelected = false;
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // Handle back button press to exit selection mode
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                new androidx.activity.OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        if (adapter != null && adapter.isSelectionMode()) {
+                            // Exit selection mode instead of going back
+                            adapter.setSelectionMode(false);
+                            onSelectionModeChanged(false, new HashSet<>());
+                        } else {
+                            // Normal back behavior
+                            this.remove();
+                            requireActivity().getOnBackPressedDispatcher().onBackPressed();
+                        }
+                    }
+                });
     }
 
     private void moveSelectedTodos() {
@@ -294,9 +367,9 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
             for (Todo todo : adapter.getSelectedTodos()) {
                 todoViewModel.delete(todo);
             }
+            // Call onSelectionModeChanged to properly update the UI
+            onSelectionModeChanged(false, new HashSet<>());
             adapter.setSelectionMode(false);
-            bottomActionBar.setVisibility(View.GONE);
-            btnAdd.show();
         }
     }
 }

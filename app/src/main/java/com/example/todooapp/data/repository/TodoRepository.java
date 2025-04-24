@@ -195,4 +195,8 @@ public class TodoRepository {
             }
         });
     }
+
+    public Set<String> getCategoriesFromPrefs() {
+        return sharedPreferences.getStringSet(PREF_CATEGORIES, new HashSet<>());
+    }
 }

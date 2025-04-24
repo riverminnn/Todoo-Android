@@ -2,5 +2,5 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="design_default_color_primary">#9A8EFF</color>
+    <color name="checkbox_selected">#feb317</color>
 </resources>

@@ -20,6 +20,10 @@
         android:id="@+id/action_todoListFragment_to_categoryManagementFragment"
         app:destination="@id/categoryManagementFragment" />
 
+    <action
+        android:id="@+id/action_todoFormFragment_to_categoryManagementFragment"
+        app:destination="@id/categoryManagementFragment" />
+
     <fragment
         android:id="@+id/categoryManagementFragment"
         android:name="com.example.todooapp.fragments.CategoryManagementFragment"
