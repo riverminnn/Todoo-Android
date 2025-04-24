@@ -12,6 +12,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.example.todooapp.data.model.Todo;
 import com.example.todooapp.data.repository.TodoRepository;
+import com.example.todooapp.utils.SettingsManager;
 import com.example.todooapp.utils.TodoSortOption;
 
 import java.util.ArrayList;
@@ -30,6 +31,10 @@ public class TodoViewModel extends AndroidViewModel {
         super(application);
         repository = new TodoRepository(application);
         allTodos = repository.getAllTodos();
+
+        // Load saved sort option
+        SettingsManager settingsManager = new SettingsManager(application);
+        currentSortOption.setValue(settingsManager.getSortOption());
 
         // Setup sorted todos mediator
         sortedTodos.addSource(allTodos, todos -> sortTodos(todos, currentSortOption.getValue()));
