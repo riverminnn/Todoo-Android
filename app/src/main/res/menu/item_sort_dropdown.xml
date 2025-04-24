@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/sort_modified_desc"
+        android:title="Last modified (newest first)" />
+    <item
+        android:id="@+id/sort_modified_asc"
+        android:title="Last modified (oldest first)" />
+    <item
+        android:id="@+id/sort_created_desc"
+        android:title="Creation date (newest first)" />
+    <item
+        android:id="@+id/sort_created_asc"
+        android:title="Creation date (oldest first)" />
+    <item
+        android:id="@+id/sort_alphabetical_asc"
+        android:title="Title (A-Z)" />
+    <item
+        android:id="@+id/sort_alphabetical_desc"
+        android:title="Title (Z-A)" />
+</menu>

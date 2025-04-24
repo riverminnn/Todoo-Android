@@ -5,6 +5,17 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/todoListFragment">
 
+    <fragment
+        android:id="@+id/settingsMenuFragment"
+        android:name="com.example.todooapp.fragments.SettingsMenuFragment"
+        android:label="Settings"
+        tools:layout="@layout/settings_menu_fragment" />
+
+    <!-- Add navigation action from TodoListFragment to SettingsMenuFragment -->
+    <action
+        android:id="@+id/action_todoListFragment_to_settingsMenuFragment"
+        app:destination="@id/settingsMenuFragment" />
+
     <!-- Add to res/navigation/nav_graph.xml -->
     <fragment
         android:id="@+id/loginFragment"

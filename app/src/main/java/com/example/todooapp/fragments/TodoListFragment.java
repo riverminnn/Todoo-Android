@@ -138,6 +138,11 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
             // Toggle the state
             allTodosSelected = !allTodosSelected;
         });
+
+        TextView btnSettings = view.findViewById(R.id.btnSettings);
+        btnSettings.setOnClickListener(v -> {
+            Navigation.findNavController(view).navigate(R.id.action_todoListFragment_to_settingsMenuFragment);
+        });
     }
 
     private void setupCategoryFilter() {
@@ -199,7 +204,7 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
     }
 
     private void loadAllTodos() {
-        todoViewModel.getAllTodos().observe(getViewLifecycleOwner(), todos -> {
+        todoViewModel.getSortedTodos().observe(getViewLifecycleOwner(), todos -> {
             todoList.clear();
             if (todos != null) {
                 todoList.addAll(todos);
