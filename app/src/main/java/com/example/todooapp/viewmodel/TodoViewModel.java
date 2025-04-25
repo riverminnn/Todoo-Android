@@ -3,6 +3,7 @@ package com.example.todooapp.viewmodel;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -160,5 +161,45 @@ public class TodoViewModel extends AndroidViewModel {
         }
 
         sortedTodos.setValue(sortedList);
+    }
+
+    // Add to TodoViewModel.java
+    public LiveData<List<Todo>> getTrashTodos() {
+        return repository.getTrashTodos();
+    }
+
+    public void moveToTrash(Todo todo) {
+        Log.d("TodoViewModel", "Moving to trash: " + todo.getId() + ", " + todo.getTitle());
+        todo.setInTrash(true);
+        todo.setTrashDate(System.currentTimeMillis());
+        repository.update(todo);
+    }
+    public void restoreFromTrash(Todo todo) {
+        todo.setInTrash(false);
+        todo.setTrashDate(0);
+        repository.update(todo);
+    }
+
+    public void emptyTrash() {
+        repository.emptyTrash();
+    }
+
+    public void deleteExpiredTrashedTodos() {
+        repository.deleteExpiredTrashedTodos();
+    }
+
+    // Add to TodoViewModel.java
+    public LiveData<List<Todo>> getHiddenTodos() {
+        return repository.getHiddenTodos();
+    }
+
+    public void hideItem(Todo todo) {
+        todo.setHidden(true);
+        repository.update(todo);
+    }
+
+    public void unhideItem(Todo todo) {
+        todo.setHidden(false);
+        repository.update(todo);
     }
 }

@@ -15,6 +15,47 @@ public class Todo {
 
     private long creationDate;
 
+    private String firebaseKey;
+
+    public String getFirebaseKey() {
+        return firebaseKey;
+    }
+
+    public void setFirebaseKey(String firebaseKey) {
+        this.firebaseKey = firebaseKey;
+    }
+
+    // Add to Todo.java class
+    private boolean hidden = false;
+
+    public boolean isHidden() {
+        return hidden;
+    }
+
+    public void setHidden(boolean hidden) {
+        this.hidden = hidden;
+    }
+
+    // Add to Todo.java class
+    private boolean inTrash = false;
+    private long trashDate = 0;
+
+    public boolean isInTrash() {
+        return inTrash;
+    }
+
+    public void setInTrash(boolean inTrash) {
+        this.inTrash = inTrash;
+    }
+
+    public long getTrashDate() {
+        return trashDate;
+    }
+
+    public void setTrashDate(long trashDate) {
+        this.trashDate = trashDate;
+    }
+
     public long getCreationDate() {
         return creationDate;
     }

@@ -5,27 +5,35 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/todoListFragment">
 
+    <action
+        android:id="@+id/action_todoListFragment_to_hideFragment"
+        app:destination="@id/hideFragment" />
+
+    <fragment
+        android:id="@+id/hideFragment"
+        android:name="com.example.todooapp.fragments.HideFragment"
+        android:label="fragment_hide"
+        tools:layout="@layout/fragment_hide" />
+
     <fragment
         android:id="@+id/settingsMenuFragment"
         android:name="com.example.todooapp.fragments.SettingsMenuFragment"
         android:label="Settings"
         tools:layout="@layout/settings_menu_fragment" />
 
-    <!-- Add navigation action from TodoListFragment to SettingsMenuFragment -->
+    <fragment
+        android:id="@+id/fragment_trash"
+        android:name="com.example.todooapp.fragments.TrashFragment"
+        android:label="Trash"
+        tools:layout="@layout/fragment_trash" />
+
+    <action
+        android:id="@+id/action_categoryManagementFragment_to_trashFragment"
+        app:destination="@id/fragment_trash" />
+
     <action
         android:id="@+id/action_todoListFragment_to_settingsMenuFragment"
         app:destination="@id/settingsMenuFragment" />
-
-    <!-- Add to res/navigation/nav_graph.xml -->
-    <fragment
-        android:id="@+id/loginFragment"
-        android:name="com.example.todooapp.fragments.LoginFragment"
-        android:label="Login"
-        tools:layout="@layout/fragment_login" />
-
-    <action
-        android:id="@+id/action_todoListFragment_to_loginFragment"
-        app:destination="@id/loginFragment" />
 
     <action
         android:id="@+id/action_todoListFragment_to_categoryManagementFragment"

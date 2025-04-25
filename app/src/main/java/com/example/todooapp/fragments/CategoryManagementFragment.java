@@ -1,13 +1,10 @@
 package com.example.todooapp.fragments;
 
-import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.todooapp.R;
 import com.example.todooapp.adapter.CategoryAdapter;
 import com.example.todooapp.data.model.Todo;
+import com.example.todooapp.utils.TodooDialogBuilder;
 import com.example.todooapp.viewmodel.TodoViewModel;
 
 import java.util.ArrayList;
@@ -37,8 +35,7 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
     private RecyclerView rvCategories;
     private TodoViewModel todoViewModel;
     private CategoryAdapter categoryAdapter;
-    private TextView btnBack, btnX, btnSelectAll;
-    private TextView titleText, btnDelete, btnEdit, btnTrashCan;
+    private TextView btnBack, btnX, btnSelectAll, titleText, btnDelete, btnEdit, btnTrashCan;
     private LinearLayout bottomActionBar, editLayout;
     private TextView actionAddFolder;
     private Set<String> selectedCategories = new HashSet<>();
@@ -55,10 +52,20 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize ViewModel
-        todoViewModel = new ViewModelProvider(requireActivity()).get(TodoViewModel.class);
+        initializeViewModel();
+        initializeViews(view);
+        setupRecyclerView();
+        checkMoveMode(view);
+        setupNormalModeUI();
+        setupClickListeners(view);
+        loadCategoriesWithCounts();
+    }
 
-        // Initialize UI components
+    private void initializeViewModel() {
+        todoViewModel = new ViewModelProvider(requireActivity()).get(TodoViewModel.class);
+    }
+
+    private void initializeViews(View view) {
         rvCategories = view.findViewById(R.id.rvCategories);
         btnBack = view.findViewById(R.id.btnBack);
         btnX = view.findViewById(R.id.btnCancelSelection);
@@ -70,29 +77,25 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
         btnDelete = view.findViewById(R.id.action_delete);
         btnEdit = view.findViewById(R.id.action_edit);
         btnTrashCan = view.findViewById(R.id.btnTrashCan);
+    }
 
-        // Set up RecyclerView
+    private void setupRecyclerView() {
         rvCategories.setLayoutManager(new LinearLayoutManager(requireContext()));
+    }
 
-        // Check if we're in move mode (passed todo IDs)
+    private void checkMoveMode(View view) {
         if (getArguments() != null && getArguments().getLongArray("selectedTodoIds") != null) {
             selectedTodoIds = getArguments().getLongArray("selectedTodoIds");
             moveMode = true;
             setupForMoveMode();
         }
+    }
 
-        // Set up normal mode UI initially
-        setupNormalModeUI();
-
-        // Set click listeners
-        btnBack.setOnClickListener(v -> Navigation.findNavController(requireView()).popBackStack());
-
+    private void setupClickListeners(View view) {
+        btnBack.setOnClickListener(v -> Navigation.findNavController(view).popBackStack());
         btnX.setOnClickListener(v -> exitSelectionMode());
-
         btnSelectAll.setOnClickListener(v -> toggleSelectAll());
-
         actionAddFolder.setOnClickListener(v -> showAddCategoryDialog());
-
         btnDelete.setOnClickListener(v -> {
             if (!selectedCategories.isEmpty()) {
                 confirmDeleteCategories();
@@ -100,7 +103,6 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
                 Toast.makeText(requireContext(), "Select folders to delete", Toast.LENGTH_SHORT).show();
             }
         });
-
         btnEdit.setOnClickListener(v -> {
             if (selectedCategories.size() == 1) {
                 String category = selectedCategories.iterator().next();
@@ -109,9 +111,8 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
                 Toast.makeText(requireContext(), "Select only one folder to edit", Toast.LENGTH_SHORT).show();
             }
         });
-
-        // Load categories with counts
-        loadCategoriesWithCounts();
+        btnTrashCan.setOnClickListener(v ->
+                Navigation.findNavController(view).navigate(R.id.action_categoryManagementFragment_to_trashFragment));
     }
 
     private void setupNormalModeUI() {
@@ -125,7 +126,6 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
     }
 
     private void setupSelectionModeUI(int selectedCount) {
-        // Update title with proper singular/plural form
         titleText.setText(selectedCount == 1 ? "1 Folder selected" : selectedCount + " Folders selected");
         btnBack.setVisibility(View.GONE);
         btnX.setVisibility(View.VISIBLE);
@@ -135,20 +135,23 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
         btnTrashCan.setVisibility(View.GONE);
     }
 
+    private void setupForMoveMode() {
+        titleText.setText("Move to Folder");
+        btnBack.setVisibility(View.VISIBLE);
+        bottomActionBar.setVisibility(View.GONE);
+    }
+
     private void toggleSelectAll() {
         List<String> categories = categoryAdapter.getCategories();
 
         if (allCategoriesSelected) {
-            // Unselect all categories
             selectedCategories.clear();
-            btnSelectAll.setTextColor(Color.parseColor("#4A4A4A")); // Original color
+            btnSelectAll.setTextColor(Color.parseColor("#4A4A4A"));
         } else {
-            // Select all categories
             selectedCategories.addAll(categories);
-            btnSelectAll.setTextColor(Color.parseColor("#2196F3")); // Blue color
+            btnSelectAll.setTextColor(Color.parseColor("#2196F3"));
         }
 
-        // Toggle state and update UI
         allCategoriesSelected = !allCategoriesSelected;
         categoryAdapter.notifyDataSetChanged();
         onSelectionModeChanged(true, selectedCategories);
@@ -164,17 +167,14 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
     private void loadCategoriesWithCounts() {
         todoViewModel.getAllUniqueCategories().observe(getViewLifecycleOwner(), categories -> {
             todoViewModel.getAllTodos().observe(getViewLifecycleOwner(), todos -> {
-                // Create a map to store category counts
                 Map<String, Integer> categoryCounts = new HashMap<>();
 
-                // Initialize all categories with count 0
                 for (String category : categories) {
                     if (category != null && !category.isEmpty()) {
                         categoryCounts.put(category, 0);
                     }
                 }
 
-                // Count todos per category
                 if (todos != null) {
                     for (Todo todo : todos) {
                         String todoCategory = todo.getCategory();
@@ -190,55 +190,37 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
         });
     }
 
-    private void setupForMoveMode() {
-        // Custom header for move mode
-        titleText.setText("Move to Folder");
-        btnBack.setVisibility(View.VISIBLE);
-        bottomActionBar.setVisibility(View.GONE);
-    }
-
     private void showAddCategoryDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Add New Folder");
-
-        final EditText input = new EditText(requireContext());
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        builder.setView(input);
-
-        builder.setPositiveButton("OK", (dialog, which) -> {
-            String categoryName = input.getText().toString().trim();
-            if (!categoryName.isEmpty()) {
-                addCategory(categoryName);
-            } else {
-                Toast.makeText(requireContext(), "Folder name cannot be empty", Toast.LENGTH_SHORT).show();
-            }
-        });
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        builder.show();
+        new TodooDialogBuilder(requireContext())
+                .withInputField(
+                        "Add New Folder",
+                        "Folder name",
+                        null,
+                        categoryName -> {
+                            if (!categoryName.isEmpty()) {
+                                addCategory(categoryName);
+                            } else {
+                                Toast.makeText(requireContext(), "Folder name cannot be empty", Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                .show();
     }
 
     private void showEditCategoryDialog(String currentName) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Edit Folder Name");
-
-        final EditText input = new EditText(requireContext());
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        input.setText(currentName);
-        builder.setView(input);
-
-        builder.setPositiveButton("Save", (dialog, which) -> {
-            String newName = input.getText().toString().trim();
-            if (!newName.isEmpty() && !newName.equals(currentName)) {
-                todoViewModel.updateCategory(currentName, newName);
-                Toast.makeText(requireContext(), "Folder renamed", Toast.LENGTH_SHORT).show();
-                exitSelectionMode();
-                loadCategoriesWithCounts();
-            }
-        });
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        builder.show();
+        new TodooDialogBuilder(requireContext())
+                .withInputField(
+                        "Edit Folder Name",
+                        "Folder name",
+                        currentName,
+                        newName -> {
+                            if (!newName.isEmpty() && !newName.equals(currentName)) {
+                                todoViewModel.updateCategory(currentName, newName);
+                                Toast.makeText(requireContext(), "Folder renamed", Toast.LENGTH_SHORT).show();
+                                exitSelectionMode();
+                                loadCategoriesWithCounts();
+                            }
+                        })
+                .show();
     }
 
     private void addCategory(String category) {
@@ -252,14 +234,12 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
     }
 
     private void confirmDeleteCategories() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("Delete Folders");
-        builder.setMessage("Are you sure you want to delete the selected folders? All todos in these folders will be moved to 'Uncategorized'.");
-
-        builder.setPositiveButton("Delete", (dialog, which) -> deleteSelectedCategories());
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        builder.show();
+        new TodooDialogBuilder(requireContext())
+                .setTitle("Delete Folders")
+                .setMessage("Are you sure you want to delete the selected folders? All todos in these folders will be moved to 'Uncategorized'.")
+                .setPositiveButton("Delete", (dialog, which) -> deleteSelectedCategories())
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
     }
 
     private void deleteSelectedCategories() {
@@ -272,11 +252,9 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
         loadCategoriesWithCounts();
     }
 
-    // CategoryClickListener implementation
     @Override
     public void onCategoryClick(String category) {
         if (moveMode && selectedTodoIds != null) {
-            // Move todos to this category
             for (long todoId : selectedTodoIds) {
                 todoViewModel.updateTodoCategory(todoId, category);
             }
@@ -291,25 +269,12 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
 
         if (active) {
             setupSelectionModeUI(selectedItems.size());
+            editLayout.setVisibility(selectedItems.size() == 1 ? View.VISIBLE : View.GONE);
 
-            // Show edit button only when exactly 1 category is selected
-            if (selectedItems.size() == 1) {
-                editLayout.setVisibility(View.VISIBLE);
-            } else {
-                editLayout.setVisibility(View.GONE);
-            }
-
-            // Check if all categories are selected
             if (categoryAdapter != null) {
                 List<String> allCategories = categoryAdapter.getCategories();
-                allCategoriesSelected = !allCategories.isEmpty() &&
-                        selectedItems.size() == allCategories.size();
-
-                if (allCategoriesSelected) {
-                    btnSelectAll.setTextColor(Color.parseColor("#2196F3")); // Blue color
-                } else {
-                    btnSelectAll.setTextColor(Color.parseColor("#4A4A4A")); // Original color
-                }
+                allCategoriesSelected = !allCategories.isEmpty() && selectedItems.size() == allCategories.size();
+                btnSelectAll.setTextColor(allCategoriesSelected ? Color.parseColor("#2196F3") : Color.parseColor("#4A4A4A"));
             }
         } else {
             setupNormalModeUI();
@@ -320,7 +285,6 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
     public void onResume() {
         super.onResume();
 
-        // Handle back button press to exit selection mode
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
                 new androidx.activity.OnBackPressedCallback(true) {
                     @Override

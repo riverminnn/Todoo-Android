@@ -3,6 +3,7 @@ package com.example.todooapp.data.repository;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
@@ -59,28 +60,46 @@ public class TodoRepository {
             // Insert to Firebase
             String key = firebaseRef.push().getKey();
             if (key != null) {
+                todo.setFirebaseKey(key);
                 firebaseRef.child(key).setValue(todo);
+                // Update Room with the Firebase key
+                todoDao.update(todo);
             }
         });
     }
 
     public void update(Todo todo) {
         executorService.execute(() -> {
+            // Debug log to verify inTrash status
+            if (todo.isInTrash()) {
+                Log.d("TodoRepository", "Updating todo with inTrash=true: " + todo.getId());
+            }
+
             // Update in Room
             todoDao.update(todo);
 
-            // Update in Firebase
-            firebaseRef.child(String.valueOf(todo.getId())).setValue(todo);
+            // Update in Firebase using the Firebase key
+            String key = todo.getFirebaseKey();
+            if (key != null) {
+                firebaseRef.child(key).setValue(todo);
+            } else {
+                // Fallback if no Firebase key exists
+                firebaseRef.child(String.valueOf(todo.getId())).setValue(todo);
+            }
         });
     }
 
+    // Fix in TodoRepository.java
     public void delete(Todo todo) {
         executorService.execute(() -> {
-            // Delete from Room
+            // Delete from local database
             todoDao.delete(todo);
 
-            // Delete from Firebase
-            firebaseRef.child(String.valueOf(todo.getId())).removeValue();
+            // Delete from Firebase using the correct key
+            String firebaseKey = todo.getFirebaseKey();
+            if (firebaseKey != null && !firebaseKey.isEmpty()) {
+                firebaseRef.child(firebaseKey).removeValue();
+            }
         });
     }
 
@@ -198,5 +217,34 @@ public class TodoRepository {
 
     public Set<String> getCategoriesFromPrefs() {
         return sharedPreferences.getStringSet(PREF_CATEGORIES, new HashSet<>());
+    }
+
+    // Add to TodoRepository.java
+    public LiveData<List<Todo>> getTrashTodos() {
+        Log.d("TodoRepository", "Getting trash todos");
+        return todoDao.getTrashTodos();
+    }
+
+    public void emptyTrash() {
+        executorService.execute(() -> {
+            todoDao.emptyTrash();
+        });
+    }
+
+    // Add to TodoRepository.java
+    public void deleteExpiredTrashedTodos() {
+        executorService.execute(() -> {
+            // Calculate date 30 days ago
+            long thirtyDaysInMillis = 30 * 24 * 60 * 60 * 1000L;
+            long expirationThreshold = System.currentTimeMillis() - thirtyDaysInMillis;
+
+            // Delete trash items older than 30 days
+            todoDao.deleteExpiredTrashedTodos(expirationThreshold);
+        });
+    }
+
+    // Add to TodoRepository.java
+    public LiveData<List<Todo>> getHiddenTodos() {
+        return todoDao.getHiddenTodos();
     }
 }
