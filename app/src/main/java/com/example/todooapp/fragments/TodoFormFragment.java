@@ -1,6 +1,8 @@
 package com.example.todooapp.fragments;
 
 import android.annotation.SuppressLint;
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.Editable;
@@ -23,9 +25,12 @@ import androidx.navigation.Navigation;
 
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
+import com.example.todooapp.utils.ReminderHelper;
+import com.example.todooapp.utils.TodooDialogBuilder;
 import com.example.todooapp.viewmodel.TodoViewModel;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Stack;
@@ -206,10 +211,45 @@ public class TodoFormFragment extends Fragment {
             popupMenu.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();
                 if (itemId == R.id.action_delete) {
-                    deleteTodo();
+                    // Show confirmation dialog instead of direct deletion
+                    new TodooDialogBuilder(requireContext())
+                            .setTitle("Delete Item")
+                            .setMessage("What would you like to do with this item?")
+                            .setPositiveButton("Move to Trash", (dialog, which) -> {
+                                long id = Long.parseLong(todoId);
+                                todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
+                                    if (currentTodo != null) {
+                                        todoViewModel.moveToTrash(currentTodo);
+                                        Toast.makeText(requireContext(), "Item moved to trash", Toast.LENGTH_SHORT).show();
+                                        Navigation.findNavController(requireView()).popBackStack();
+                                    }
+                                });
+                            })
+                            .setNegativeButton("Delete Permanently", (dialog, which) -> {
+                                deleteTodo();
+                            })
+                            .show();
                     return true;
                 } else if (itemId == R.id.action_move_to) {
                     showCategorySelection();
+                    return true;
+                } else if (itemId == R.id.action_hide) {
+                    long id = Long.parseLong(todoId);
+                    todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
+                        if (currentTodo != null) {
+                            todoViewModel.hideItem(currentTodo);
+                            Toast.makeText(
+                                    requireContext(),
+                                    "Item hidden. Pull down from the top to see hidden todos.",
+                                    Toast.LENGTH_LONG
+                            ).show();
+                            Navigation.findNavController(requireView()).popBackStack();
+                        }
+                    });
+                    return true;
+                }else if (itemId == R.id.action_reminder) {
+                    // Show date/time picker for reminder
+                    showReminderDialog();
                     return true;
                 }
                 return false;
@@ -492,5 +532,106 @@ public class TodoFormFragment extends Fragment {
 
     public void setLastSavedContent(String lastSavedContent) {
         this.lastSavedContent = lastSavedContent;
+    }
+
+    private void showReminderDialog() {
+        // Create a calendar instance with current date/time
+        final Calendar calendar = Calendar.getInstance();
+
+        // Create DatePickerDialog
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                requireContext(),
+                (view, year, month, dayOfMonth) -> {
+                    // Set date to calendar
+                    calendar.set(Calendar.YEAR, year);
+                    calendar.set(Calendar.MONTH, month);
+                    calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+
+                    // After date is selected, show time picker
+                    TimePickerDialog timePickerDialog = new TimePickerDialog(
+                            requireContext(),
+                            (view1, hourOfDay, minute) -> {
+                                // Set time to calendar
+                                calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                                calendar.set(Calendar.MINUTE, minute);
+                                calendar.set(Calendar.SECOND, 0);
+
+                                // Save reminder time to todo
+                                setReminder(calendar.getTimeInMillis());
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            true
+                    );
+                    timePickerDialog.show();
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+
+        // Set minimum date to today
+        datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
+        datePickerDialog.show();
+    }
+
+    private void setReminder(long reminderTime) {
+        // Make sure we have a valid todoId
+        if (todoId == null) {
+            // Save the todo first and then set the reminder
+            String title = etTitle.getText().toString().trim();
+            String content = etContent.getText().toString().trim();
+
+            if (title.isEmpty() && !content.isEmpty()) {
+                title = content.substring(0, Math.min(content.length(), 20)) + "...";
+            }
+
+            Todo newTodo = new Todo();
+            newTodo.setTitle(title);
+            newTodo.setContent(content);
+            newTodo.setTimestamp(System.currentTimeMillis());
+            newTodo.setCreationDate(System.currentTimeMillis());
+            newTodo.setHasReminder(true);
+            newTodo.setReminderTime(reminderTime);
+
+            todoViewModel.insert(newTodo);
+            Toast.makeText(requireContext(), "Todo saved with reminder", Toast.LENGTH_SHORT).show();
+            Navigation.findNavController(requireView()).popBackStack();
+            return;
+        }
+
+        try {
+            long id = Long.parseLong(todoId);
+            // Use a one-time observer pattern to avoid multiple toast messages
+            final boolean[] handled = {false};
+            todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Todo>() {
+                @Override
+                public void onChanged(Todo existingTodo) {
+                    if (existingTodo != null && !handled[0] &&
+                            getViewLifecycleOwner().getLifecycle().getCurrentState()
+                                    .isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+
+                        handled[0] = true;  // Mark as handled to prevent multiple executions
+
+                        existingTodo.setHasReminder(true);
+                        existingTodo.setReminderTime(reminderTime);
+                        todoViewModel.update(existingTodo);
+
+                        // Schedule the reminder
+                        ReminderHelper.scheduleReminder(requireContext(), existingTodo);
+
+                        // Format date for user feedback
+                        SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault());
+                        String formattedDate = sdf.format(new Date(reminderTime));
+                        Toast.makeText(requireContext(), "Reminder set for " + formattedDate, Toast.LENGTH_LONG).show();
+
+                        // Remove the observer after handling
+                        todoViewModel.getTodoById(id).removeObserver(this);
+                    }
+                }
+            });
+        } catch (NumberFormatException e) {
+            Toast.makeText(requireContext(), "Error setting reminder", Toast.LENGTH_SHORT).show();
+        }
     }
 }

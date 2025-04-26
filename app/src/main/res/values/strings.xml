@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Todoo</string>
+    <string name="action_reminder">Reminder</string>
+    <string name="action_hide">Hide</string>
+    <string name="action_home_screen">Place on Home Screen</string>
+    <string name="action_move">Move To</string>
+    <string name="action_delete">Delete</string>
 </resources>

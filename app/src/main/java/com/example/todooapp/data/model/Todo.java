@@ -26,6 +26,26 @@ public class Todo {
     }
 
     // Add to Todo.java class
+    private long reminderTime = 0;
+    private boolean hasReminder = false;
+
+    public long getReminderTime() {
+        return reminderTime;
+    }
+
+    public void setReminderTime(long reminderTime) {
+        this.reminderTime = reminderTime;
+    }
+
+    public boolean hasReminder() {
+        return hasReminder;
+    }
+
+    public void setHasReminder(boolean hasReminder) {
+        this.hasReminder = hasReminder;
+    }
+
+    // Add to Todo.java class
     private boolean isPinned = false;
 
     public boolean isPinned() {

@@ -2,18 +2,18 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/action_reminder"
-        android:title="@string/app_name" />
+        android:title="@string/action_reminder" />
     <item
         android:id="@+id/action_hide"
-        android:title="Hide" />
+        android:title="@string/action_hide" />
     <item
         android:id="@+id/action_place_home_screen"
-        android:title="Place on Home Screen" />
+        android:title="@string/action_home_screen" />
     <item
         android:id="@+id/action_move_to"
-        android:title="Move To" />
+        android:title="@string/action_move" />
     <item
         android:id="@+id/action_delete"
-        android:title="Delete" />
+        android:title="@string/action_delete" />
 
 </menu>

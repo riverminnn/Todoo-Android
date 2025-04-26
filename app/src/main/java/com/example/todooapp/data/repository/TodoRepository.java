@@ -30,13 +30,13 @@ public class TodoRepository {
     private SharedPreferences sharedPreferences;
     private static final String PREF_CATEGORIES = "categories";
 
-    public TodoRepository(Application application) {
-        TodoDatabase database = TodoDatabase.getInstance(application);
+    public TodoRepository(Context context) {
+        TodoDatabase database = TodoDatabase.getInstance(context);
         todoDao = database.todoDao();
         allTodos = todoDao.getAllTodos();
         firebaseRef = FirebaseDatabase.getInstance().getReference("todos");
         executorService = Executors.newSingleThreadExecutor();
-        sharedPreferences = application.getSharedPreferences("todo_prefs", Context.MODE_PRIVATE);
+        sharedPreferences = context.getSharedPreferences("todo_prefs", Context.MODE_PRIVATE);
     }
 
     public LiveData<List<Todo>> getAllTodos() {
@@ -246,5 +246,9 @@ public class TodoRepository {
     // Add to TodoRepository.java
     public LiveData<List<Todo>> getHiddenTodos() {
         return todoDao.getHiddenTodos();
+    }
+
+    public List<Todo> getActiveTodosSync() {
+        return todoDao.getActiveTodosSync();
     }
 }

@@ -1,7 +1,10 @@
 package com.example.todooapp.viewmodel;
 
 import android.app.Application;
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
 
@@ -13,8 +16,10 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.example.todooapp.data.model.Todo;
 import com.example.todooapp.data.repository.TodoRepository;
+import com.example.todooapp.utils.ReminderHelper;
 import com.example.todooapp.utils.SettingsManager;
 import com.example.todooapp.utils.TodoSortOption;
+import com.example.todooapp.widget.TodoWidget;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,14 +57,17 @@ public class TodoViewModel extends AndroidViewModel {
 
     public void insert(Todo todo) {
         repository.insert(todo);
+        notifyWidgetDataChanged(getApplication());
     }
 
     public void update(Todo todo) {
         repository.update(todo);
+        notifyWidgetDataChanged(getApplication());
     }
 
     public void delete(Todo todo) {
         repository.delete(todo);
+        notifyWidgetDataChanged(getApplication());
     }
 
     public LiveData<Todo> getTodoById(long id) {
@@ -229,5 +237,26 @@ public class TodoViewModel extends AndroidViewModel {
             }
             repository.update(todo);
         }
+    }
+
+    public void scheduleReminder(Context context, Todo todo) {
+        ReminderHelper.scheduleReminder(context, todo);
+    }
+
+    public void cancelReminder(Context context, Todo todo) {
+        ReminderHelper.cancelReminder(context, todo);
+        todo.setHasReminder(false);
+        todo.setReminderTime(0);
+        update(todo);
+    }
+
+    // Add this method to TodoViewModel
+    public void notifyWidgetDataChanged(Context context) {
+        Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+        intent.setComponent(new ComponentName(context, TodoWidget.class));
+        int[] ids = AppWidgetManager.getInstance(context)
+                .getAppWidgetIds(new ComponentName(context, TodoWidget.class));
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+        context.sendBroadcast(intent);
     }
 }

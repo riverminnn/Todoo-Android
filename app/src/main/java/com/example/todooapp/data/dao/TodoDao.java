@@ -58,4 +58,7 @@ public interface TodoDao {
     @Query("SELECT * FROM todos WHERE hidden = 1 AND inTrash = 0")
     LiveData<List<Todo>> getHiddenTodos();
 
+    // Add to TodoDao.java
+    @Query("SELECT * FROM todos WHERE inTrash = 0 AND hidden = 0 ORDER BY timestamp DESC")
+    List<Todo> getActiveTodosSync();
 }
