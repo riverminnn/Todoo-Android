@@ -1,7 +1,5 @@
 package com.example.todooapp.fragments;
 
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,7 +18,6 @@ import com.example.todooapp.utils.TodoSortOption;
 import com.example.todooapp.utils.TodooDialogBuilder;
 import com.example.todooapp.utils.UserManager;
 import com.example.todooapp.viewmodel.TodoViewModel;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class SettingsMenuFragment extends Fragment {
 
@@ -35,7 +32,7 @@ public class SettingsMenuFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.settings_menu_fragment, container, false);
+        return inflater.inflate(R.layout.fragment_settings_menu, container, false);
     }
 
     @Override

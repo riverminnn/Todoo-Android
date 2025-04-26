@@ -60,6 +60,7 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         initializeViewModel();
         initializeViews(view);
         setupRecyclerView();
+        setupPinButton(view);
         setupCategoryFilter();
         setupSearchView();
         setupNavigationButtons(view);
@@ -102,6 +103,38 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
                 return true;
             }
         });
+    }
+
+    private void setupPinButton(View view) {
+        TextView pinButton = view.findViewById(R.id.action_pin);
+        LinearLayout pinContainer = view.findViewById(R.id.action_pin_container);
+        TextView pinLabel = view.findViewById(R.id.action_pin_label);
+
+        pinButton.setOnClickListener(v -> togglePinStatusForSelectedTodos());
+        pinContainer.setOnClickListener(v -> togglePinStatusForSelectedTodos());
+    }
+
+    private void togglePinStatusForSelectedTodos() {
+        if (adapter.isSelectionMode() && !adapter.getSelectedTodos().isEmpty()) {
+            // Check if all selected todos are already pinned
+            boolean allPinned = true;
+            for (Todo todo : adapter.getSelectedTodos()) {
+                if (!todo.isPinned()) {
+                    allPinned = false;
+                    break;
+                }
+            }
+
+            // Toggle pin status based on current state
+            todoViewModel.togglePinStatus(adapter.getSelectedTodos(), !allPinned);
+            Toast.makeText(requireContext(),
+                    allPinned ? "Items unpinned" : "Items pinned",
+                    Toast.LENGTH_SHORT).show();
+
+            adapter.setSelectionMode(false);
+            onSelectionModeChanged(false, new HashSet<>());
+            loadAllTodos();
+        }
     }
 
     private void setupNavigationButtons(View view) {
@@ -193,7 +226,7 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
 
             Toast.makeText(
                     requireContext(),
-                    "Items hidden. Pull down from the top of the list to access hidden items.",
+                    "Items hidden. Pull down from the top to see hidden todos.",
                     Toast.LENGTH_LONG
             ).show();
 
@@ -321,6 +354,26 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         TextView btnCancel = requireView().findViewById(R.id.btnCancelSelection);
         TextView btnSelectAll = requireView().findViewById(R.id.btnSelectAll);
         TextView btnSettings = requireView().findViewById(R.id.btnSettings);
+        // Update the pin/unpin button based on selection
+        TextView pinButton = requireView().findViewById(R.id.action_pin);
+        TextView pinLabel = requireView().findViewById(R.id.action_pin_label);
+
+        boolean allPinned = !selectedItems.isEmpty();
+        for (Todo todo : selectedItems) {
+            if (!todo.isPinned()) {
+                allPinned = false;
+                break;
+            }
+        }
+
+        // Update icon and text based on whether all selected items are pinned
+        if (allPinned) {
+            pinButton.setText("\ue68f"); // Using unpin icon
+            pinLabel.setText("Unpin");
+        } else {
+            pinButton.setText("\uf08d"); // Using pin icon
+            pinLabel.setText("Pin");
+        }
 
         if (active) {
             int count = selectedItems.size();

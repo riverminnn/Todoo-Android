@@ -44,15 +44,34 @@
                 android:textSize="14sp"
                 tools:text="Todo content preview that only shows one line" />
 
-            <TextView
-                android:id="@+id/tvDate"
+            <!-- Replace the existing tvDate TextView with this LinearLayout -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/google_sans"
-                android:textColor="#9E9E9E"
-                android:textSize="12sp"
-                tools:text="Created: Jan 1, 2023" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/google_sans"
+                    android:textColor="#9E9E9E"
+                    android:textSize="12sp"
+                    tools:text="Created: Jan 1, 2023" />
+
+                <TextView
+                    android:id="@+id/tvPinIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:fontFamily="@font/fa_free_solid_400"
+                    android:text="&#xf08d;"
+                    android:textColor="#feb317"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
         </LinearLayout>
 

@@ -26,6 +26,17 @@ public class Todo {
     }
 
     // Add to Todo.java class
+    private boolean isPinned = false;
+
+    public boolean isPinned() {
+        return isPinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        isPinned = pinned;
+    }
+
+    // Add to Todo.java class
     private boolean hidden = false;
 
     public boolean isHidden() {

@@ -160,6 +160,13 @@ public class TodoViewModel extends AndroidViewModel {
                 break;
         }
 
+        // Then sort by pin status (pinned items first)
+        Collections.sort(sortedList, (t1, t2) -> {
+            if (t1.isPinned() && !t2.isPinned()) return -1;
+            if (!t1.isPinned() && t2.isPinned()) return 1;
+            return 0;
+        });
+
         sortedTodos.setValue(sortedList);
     }
 
@@ -201,5 +208,26 @@ public class TodoViewModel extends AndroidViewModel {
     public void unhideItem(Todo todo) {
         todo.setHidden(false);
         repository.update(todo);
+    }
+
+    public void pinTodo(Todo todo) {
+        todo.setPinned(true);
+        todo.setTimestamp(System.currentTimeMillis()); // Update timestamp to control pin order
+        repository.update(todo);
+    }
+
+    public void unpinTodo(Todo todo) {
+        todo.setPinned(false);
+        repository.update(todo);
+    }
+
+    public void togglePinStatus(Set<Todo> todos, boolean pin) {
+        for (Todo todo : todos) {
+            todo.setPinned(pin);
+            if (pin) {
+                todo.setTimestamp(System.currentTimeMillis()); // Ensure newest pins appear first
+            }
+            repository.update(todo);
+        }
     }
 }

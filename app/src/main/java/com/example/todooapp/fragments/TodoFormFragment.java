@@ -3,6 +3,8 @@ package com.example.todooapp.fragments;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -23,10 +25,17 @@ import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
 import com.example.todooapp.viewmodel.TodoViewModel;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 public class TodoFormFragment extends Fragment {
     private EditText etTitle, etContent;
     private TodoViewModel todoViewModel;
     private String todoId = null;
+
+    // Add these as class variables
+    private TextView tvDate, tvCount;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -48,6 +57,27 @@ public class TodoFormFragment extends Fragment {
     private void initializeViews(View view) {
         etTitle = view.findViewById(R.id.etTitle);
         etContent = view.findViewById(R.id.etContent);
+        tvDate = view.findViewById(R.id.tvDate);
+        tvCount = view.findViewById(R.id.tvCount);
+
+        // Setup character count listener for etContent
+        etContent.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                updateCharacterCount(s.length());
+            }
+        });
+    }
+
+    // Update character count method
+    private void updateCharacterCount(int count) {
+        tvCount.setText(count + " characters");
     }
 
     private void initializeViewModel() {
@@ -110,6 +140,7 @@ public class TodoFormFragment extends Fragment {
         menuBackgroundOverlay.setOnClickListener(v -> menuBackgroundOverlay.setVisibility(View.GONE));
     }
 
+    // Modify loadTodoIfEditing to display the creation date and initial character count
     private void loadTodoIfEditing() {
         if (getArguments() != null && getArguments().getString("todoId") != null) {
             todoId = getArguments().getString("todoId");
@@ -118,13 +149,30 @@ public class TodoFormFragment extends Fragment {
                 todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), todo -> {
                     if (todo != null) {
                         etTitle.setText(todo.getTitle());
-                        etContent.setText(todo.getContent());
+                        String content = todo.getContent();
+                        etContent.setText(content);
+
+                        // Format and display creation date
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+                        String formattedDate = dateFormat.format(new Date(todo.getCreationDate()));
+                        tvDate.setText("Created: " + formattedDate);
+
+                        // Set initial character count
+                        updateCharacterCount(content != null ? content.length() : 0);
                     }
                 });
             } catch (NumberFormatException e) {
                 Toast.makeText(requireContext(), "Invalid todo ID", Toast.LENGTH_SHORT).show();
                 Navigation.findNavController(requireView()).popBackStack();
             }
+        } else {
+            // For a new todo, show current date as creation date
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+            String formattedDate = dateFormat.format(new Date(System.currentTimeMillis()));
+            tvDate.setText("Created: " + formattedDate);
+
+            // Initialize with 0 characters
+            updateCharacterCount(0);
         }
     }
 

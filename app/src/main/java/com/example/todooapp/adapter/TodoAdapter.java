@@ -90,6 +90,13 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
         holder.tvTitle.setText(todo.getTitle());
         String content = todo.getContent();
         holder.tvContent.setText(content == null || content.trim().isEmpty() ? "No text" : content);
+        // Add inside the bindTodoContent method in TodoAdapter.java
+        TextView tvPinIcon = holder.tvPinIcon;
+        if (todo.isPinned()) {
+            tvPinIcon.setVisibility(View.VISIBLE);
+        } else {
+            tvPinIcon.setVisibility(View.GONE);
+        }
     }
 
     private void bindTrashMode(TodoViewHolder holder, Todo todo) {
@@ -193,7 +200,7 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
     }
 
     static class TodoViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvContent, tvDate;
+        TextView tvTitle, tvContent, tvDate, tvPinIcon;
         CheckBox checkboxSelected;
 
         TodoViewHolder(View itemView) {
@@ -201,6 +208,7 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvContent = itemView.findViewById(R.id.tvContent);
             tvDate = itemView.findViewById(R.id.tvDate);
+            tvPinIcon = itemView.findViewById(R.id.tvPinIcon);
             checkboxSelected = itemView.findViewById(R.id.checkboxSelected);
         }
     }
