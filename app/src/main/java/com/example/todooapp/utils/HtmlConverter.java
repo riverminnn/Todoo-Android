@@ -6,9 +6,11 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
@@ -48,26 +50,54 @@ public class HtmlConverter {
             // Append text before the span
             if (currentPosition < spanInfo.start) {
                 CharSequence sub = builder.subSequence(currentPosition, spanInfo.start);
-                htmlBuilder.append(HtmlCompat.toHtml(new SpannableString(sub), HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE));
+                String subHtml = HtmlCompat.toHtml(new SpannableString(sub), HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE);
+                htmlBuilder.append(subHtml);
             }
 
             // Handle the span
             if (spanInfo.span instanceof CheckboxSpan) {
                 CheckboxSpan checkboxSpan = (CheckboxSpan) spanInfo.span;
-                String content = builder.toString().substring(spanInfo.start, spanInfo.end);
-                if (content.startsWith(" ")) {
-                    content = content.substring(1); // Remove placeholder space
+                int start = spanInfo.start;
+                int end = spanInfo.end;
+
+                // Extract the content with its formatting
+                Spannable contentSpannable = new SpannableStringBuilder(builder.subSequence(start, end));
+                // Remove the placeholder space from the content for HTML
+                if (contentSpannable.toString().startsWith(" ")) {
+                    contentSpannable = new SpannableStringBuilder(contentSpannable.subSequence(1, contentSpannable.length()));
                 }
-                String checkboxTag = "<todoo-checkbox checked=\"" + checkboxSpan.isChecked() + "\">" + content + "</todoo-checkbox>";
+
+                // Convert the content to HTML, preserving all formatting
+                String contentHtml = HtmlCompat.toHtml(contentSpannable, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
+                        .replaceAll("<p[^>]*>", "") // Remove <p> tags
+                        .replaceAll("</p>", "") // Remove </p> tags
+                        .trim();
+
+                String checkboxTag = "<todoo-checkbox checked=\"" + checkboxSpan.isChecked() + "\">" + contentHtml + "</todoo-checkbox>";
                 htmlBuilder.append(checkboxTag);
             } else if (spanInfo.span instanceof android.text.style.BulletSpan) {
-                String content = builder.toString().substring(spanInfo.start, spanInfo.end).trim();
-                String bulletTag = "<todoo-bullet>" + content + "</todoo-bullet>";
+                int start = spanInfo.start;
+                int end = spanInfo.end;
+
+                // Extract the content with its formatting
+                Spannable contentSpannable = new SpannableStringBuilder(builder.subSequence(start, end));
+
+                // Convert the content to HTML, preserving all formatting
+                String contentHtml = HtmlCompat.toHtml(contentSpannable, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
+                        .replaceAll("<p[^>]*>", "")
+                        .replaceAll("</p>", "")
+                        .trim();
+
+                String bulletTag = "<todoo-bullet>" + contentHtml + "</todoo-bullet>";
                 htmlBuilder.append(bulletTag);
             } else if (spanInfo.span instanceof RelativeSizeSpan) {
                 RelativeSizeSpan sizeSpan = (RelativeSizeSpan) spanInfo.span;
                 if (Math.abs(sizeSpan.getSizeChange() - 1.5f) < 0.1) {
-                    String content = builder.toString().substring(spanInfo.start, spanInfo.end);
+                    Spannable contentSpannable = new SpannableStringBuilder(builder.subSequence(spanInfo.start, spanInfo.end));
+                    String contentHtml = HtmlCompat.toHtml(contentSpannable, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
+                            .replaceAll("<p[^>]*>", "")
+                            .replaceAll("</p>", "")
+                            .trim();
                     boolean isBold = false;
                     StyleSpan[] styleSpans = builder.getSpans(spanInfo.start, spanInfo.end, StyleSpan.class);
                     for (StyleSpan styleSpan : styleSpans) {
@@ -76,7 +106,7 @@ public class HtmlConverter {
                             break;
                         }
                     }
-                    String headingTag = "<todoo-heading" + (isBold ? " bold=\"true\"" : "") + ">" + content + "</todoo-heading>";
+                    String headingTag = "<todoo-heading" + (isBold ? " bold=\"true\"" : "") + ">" + contentHtml + "</todoo-heading>";
                     htmlBuilder.append(headingTag);
                 }
             }
@@ -87,11 +117,15 @@ public class HtmlConverter {
         // Append remaining text
         if (currentPosition < builder.length()) {
             CharSequence sub = builder.subSequence(currentPosition, builder.length());
-            htmlBuilder.append(HtmlCompat.toHtml(new SpannableString(sub), HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE));
+            String subHtml = HtmlCompat.toHtml(new SpannableString(sub), HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE);
+            htmlBuilder.append(subHtml);
         }
 
-        // Clean up extra paragraph tags
-        String html = htmlBuilder.toString().replaceAll("<p[^>]*>", "").replaceAll("</p>", "").trim();
+        // Clean up extra paragraph tags from the entire HTML
+        String html = htmlBuilder.toString()
+                .replaceAll("<p[^>]*>", "") // Remove <p> tags
+                .replaceAll("</p>", "") // Remove </p> tags
+                .trim();
         return html;
     }
 
@@ -105,8 +139,8 @@ public class HtmlConverter {
         SpannableStringBuilder builder = new SpannableStringBuilder();
         int lastEnd = 0;
 
-        // Pattern to match custom tags
-        Pattern tagPattern = Pattern.compile("<todoo-(checkbox|bullet|heading)(?:\\s+[^>]*)?>(.+?)</todoo-\\1>");
+        // Pattern to match custom tags (checkbox, bullet, heading)
+        Pattern tagPattern = Pattern.compile("<todoo-(checkbox|bullet|heading)(?:\\s+[^>]*)?>(.*?)</todoo-\\1>", Pattern.DOTALL);
         Matcher matcher = tagPattern.matcher(html);
 
         while (matcher.find()) {
@@ -126,10 +160,13 @@ public class HtmlConverter {
                 Matcher checkedMatcher = checkedPattern.matcher(matcher.group(0));
                 boolean isChecked = checkedMatcher.find() && "true".equals(checkedMatcher.group(1));
 
+                // Parse the content as HTML to restore formatting
+                Spanned contentSpanned = HtmlCompat.fromHtml(content, HtmlCompat.FROM_HTML_MODE_LEGACY);
+
                 // Insert placeholder space and content
                 int start = builder.length();
                 builder.append(" "); // Placeholder for checkbox
-                builder.append(content);
+                builder.append(contentSpanned);
                 int end = builder.length();
 
                 // Apply checkbox spans
@@ -143,8 +180,10 @@ public class HtmlConverter {
                     builder.setSpan(new StrikethroughSpan(), start + 1, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
             } else if ("bullet".equals(type)) {
+                // Parse the content as HTML to restore formatting
+                Spanned contentSpanned = HtmlCompat.fromHtml(content, HtmlCompat.FROM_HTML_MODE_LEGACY);
                 int start = builder.length();
-                builder.append(content);
+                builder.append(contentSpanned);
                 int end = builder.length();
                 int gapWidth = (int) (8 * context.getResources().getDisplayMetrics().density);
                 builder.setSpan(new android.text.style.BulletSpan(gapWidth), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -153,8 +192,10 @@ public class HtmlConverter {
                 Matcher boldMatcher = boldPattern.matcher(matcher.group(0));
                 boolean isBold = boldMatcher.find() && "true".equals(boldMatcher.group(1));
 
+                // Parse the content as HTML to restore formatting
+                Spanned contentSpanned = HtmlCompat.fromHtml(content, HtmlCompat.FROM_HTML_MODE_LEGACY);
                 int start = builder.length();
-                builder.append(content);
+                builder.append(contentSpanned);
                 int end = builder.length();
                 builder.setSpan(new RelativeSizeSpan(1.5f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                 if (isBold) {
