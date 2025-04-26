@@ -60,18 +60,12 @@ public class TodoWidget extends AppWidgetProvider {
                 addIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_add_button, addPendingIntent);
 
-        // Set up the list view service
-        Intent serviceIntent = new Intent(context, TodoWidgetService.class);
-        serviceIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
-        serviceIntent.setData(Uri.parse(serviceIntent.toUri(Intent.URI_INTENT_SCHEME)));
-
-        views.setRemoteAdapter(R.id.widget_list_view, serviceIntent);
-        views.setEmptyView(R.id.widget_list_view, R.id.widget_empty_view);
-
-        // Set up intent template for list item clicks
+        // In TodoWidget.java - updateWidget method
         Intent clickIntent = new Intent(context, MainActivity.class);
+        // Add action to make intent unique and ensure extras are preserved
+        clickIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
         PendingIntent clickPendingIntent = PendingIntent.getActivity(context, 2,
-                clickIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                clickIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
         views.setPendingIntentTemplate(R.id.widget_list_view, clickPendingIntent);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
