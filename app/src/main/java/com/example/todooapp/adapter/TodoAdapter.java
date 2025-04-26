@@ -98,7 +98,17 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
                 .replaceAll("<.*?>", " ") // Replace all HTML tags with space
                 .replaceAll("\\s{2,}", " ") // Replace multiple spaces with single space
                 .trim();
+
+        // Limit title length to prevent second line
+        int maxTitleLength = 50;
+        if (title.length() > maxTitleLength) {
+            title = title.substring(0, maxTitleLength) + "...";
+        }
+
+        // Configure TextView to display as a single line
         holder.tvTitle.setText(title);
+        holder.tvTitle.setSingleLine(true);
+        holder.tvTitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
 
         String htmlContent = todo.getContent();
         if (htmlContent != null && !htmlContent.trim().isEmpty()) {
@@ -133,9 +143,14 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
                 firstLine = firstLine.substring(0, maxLength) + "...";
             }
 
+            // Configure TextView to display as a single line
             holder.tvContent.setText(firstLine);
+            holder.tvContent.setSingleLine(true);
+            holder.tvContent.setEllipsize(android.text.TextUtils.TruncateAt.END);
         } else {
             holder.tvContent.setText("No text");
+            holder.tvContent.setSingleLine(true);
+            holder.tvContent.setEllipsize(android.text.TextUtils.TruncateAt.END);
         }
 
         TextView tvPinIcon = holder.tvPinIcon;
