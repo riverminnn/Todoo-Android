@@ -7,9 +7,6 @@
         android:id="@+id/action_hide"
         android:title="@string/action_hide" />
     <item
-        android:id="@+id/action_place_home_screen"
-        android:title="@string/action_home_screen" />
-    <item
         android:id="@+id/action_move_to"
         android:title="@string/action_move" />
     <item
