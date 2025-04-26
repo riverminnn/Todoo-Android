@@ -119,8 +119,6 @@ public class TextFormattingManager {
             if (!line.trim().isEmpty()) {
                 int lineStart = currentPosition;
                 int lineEnd = currentPosition + line.length();
-
-                // Trim trailing whitespace from the line for span application
                 String trimmedLine = line.trim();
                 int trimmedLineEnd = lineStart + trimmedLine.length();
 
@@ -128,11 +126,13 @@ public class TextFormattingManager {
                         lineStart, lineEnd, android.text.style.BulletSpan.class);
 
                 if (existingBullets.length > 0) {
+                    // Remove bullet spans but preserve other formatting
                     for (android.text.style.BulletSpan bulletSpan : existingBullets) {
                         editable.removeSpan(bulletSpan);
                     }
                     spanRemoved = true;
                 } else {
+                    // Remove any existing checkbox spans
                     CheckboxSpan[] existingCheckboxes = editable.getSpans(lineStart, lineEnd, CheckboxSpan.class);
                     if (existingCheckboxes.length > 0) {
                         for (CheckboxSpan span : existingCheckboxes) {
@@ -154,12 +154,14 @@ public class TextFormattingManager {
                         }
                     }
 
+                    // Remove strikethrough spans (since bullet doesn't use strikethrough)
                     android.text.style.StrikethroughSpan[] strikeSpans = editable.getSpans(
                             lineStart, lineEnd, android.text.style.StrikethroughSpan.class);
                     for (android.text.style.StrikethroughSpan span : strikeSpans) {
                         editable.removeSpan(span);
                     }
 
+                    // Apply new bullet span without affecting other spans
                     int gapWidth = (int) (8 * context.getResources().getDisplayMetrics().density);
                     editable.setSpan(new android.text.style.BulletSpan(gapWidth),
                             lineStart, trimmedLineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -212,13 +214,11 @@ public class TextFormattingManager {
         String text = editable.toString();
         boolean spanRemoved = false;
 
-        // Adjust start and end to cover full lines
         int[] startLineExtents = getLineExtents(text, start);
         int[] endLineExtents = getLineExtents(text, end > start ? end - 1 : end);
         int adjustedStart = startLineExtents[0];
         int adjustedEnd = endLineExtents[1];
 
-        // Split the text into lines, considering full lines
         String selectedText = text.substring(adjustedStart, adjustedEnd);
         String[] lines = selectedText.split("\n");
 
@@ -230,11 +230,10 @@ public class TextFormattingManager {
                 int lineStart = currentPosition;
                 int lineEnd = currentPosition + line.length();
 
-                // Check for existing checkbox spans in this line
                 CheckboxSpan[] existingSpans = editable.getSpans(lineStart, lineEnd, CheckboxSpan.class);
 
                 if (existingSpans.length > 0) {
-                    // Remove existing checkbox spans
+                    // Remove checkbox-related spans but preserve other formatting
                     for (CheckboxSpan span : existingSpans) {
                         editable.removeSpan(span);
                     }
@@ -247,15 +246,13 @@ public class TextFormattingManager {
                         editable.removeSpan(span);
                     }
 
-                    // Remove the placeholder space if it exists
                     if (editable.toString().startsWith(" ", lineStart)) {
                         editable.delete(lineStart, lineStart + 1);
-                        // Adjust end position due to deletion
                         newEnd--;
                         lineEnd--;
                     }
 
-                    // Remove any existing strikethrough spans from the line
+                    // Remove strikethrough spans (since checkbox is being removed)
                     android.text.style.StrikethroughSpan[] strikeSpans = editable.getSpans(lineStart, lineEnd, android.text.style.StrikethroughSpan.class);
                     for (android.text.style.StrikethroughSpan span : strikeSpans) {
                         editable.removeSpan(span);
@@ -271,36 +268,27 @@ public class TextFormattingManager {
 
                     // Insert a placeholder space for the checkbox
                     editable.insert(lineStart, " ");
-                    newEnd++; // Adjust end position due to insertion
+                    newEnd++;
                     lineEnd++;
-
-                    // Apply new checkbox spans
                     int checkboxColor = ContextCompat.getColor(context, R.color.checkbox_selected);
-                    if (fontAwesome == null) {
-                        fontAwesome = ResourcesCompat.getFont(context, R.font.fa_free_regular_400);
-                    }
 
+                    // Apply new checkbox spans without affecting other spans
                     CheckboxSpan checkboxSpan = new CheckboxSpan(this, fontAwesome, checkboxColor, false);
                     CheckboxClickSpan clickSpan = new CheckboxClickSpan(checkboxSpan);
                     NonEditableSpan nonEditableSpan = new NonEditableSpan();
-
-                    // Apply spans: CheckboxSpan across the line, ClickSpan and NonEditableSpan on the placeholder
                     editable.setSpan(checkboxSpan, lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     editable.setSpan(clickSpan, lineStart, lineStart + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     editable.setSpan(nonEditableSpan, lineStart, lineStart + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
 
-                // Update current position to the start of the next line (+1 for the newline)
                 currentPosition = lineEnd + 1;
             } else {
-                // Move to the next line (+1 for the newline)
                 currentPosition += line.length() + 1;
             }
         }
 
         return !spanRemoved;
     }
-
     // Helper method to add or remove strikethrough without toggling
     protected void toggleStrikeThrough(Editable editable, int start, int end, boolean apply) {
         // Remove any existing strikethroughs first

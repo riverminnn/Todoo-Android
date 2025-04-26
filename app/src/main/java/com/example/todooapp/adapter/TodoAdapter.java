@@ -93,11 +93,22 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
     }
 
     private void bindTodoContent(TodoViewHolder holder, Todo todo) {
-        String title = todo.getTitle().replaceAll("<.*?>", " ") // Replace all HTML tags with space
+        // Clean the title by removing HTML tags and normalizing spaces
+        String title = todo.getTitle()
+                .replaceAll("<.*?>", " ") // Replace all HTML tags with space
                 .replaceAll("\\s{2,}", " ") // Replace multiple spaces with single space
                 .trim();
 
+        // Limit title length to prevent second line
+        int maxTitleLength = 50;
+        if (title.length() > maxTitleLength) {
+            title = title.substring(0, maxTitleLength) + "...";
+        }
+
+        // Configure TextView to display as a single line
         holder.tvTitle.setText(title);
+        holder.tvTitle.setSingleLine(true);
+        holder.tvTitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
 
         String htmlContent = todo.getContent();
         if (htmlContent != null && !htmlContent.trim().isEmpty()) {
@@ -109,13 +120,20 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
             if (lines.length > 0) {
                 String firstSegment = lines[0].trim();
                 // Match the content within the first tag (e.g., <todoo-bullet>1</todoo-bullet>)
-                Pattern contentPattern = Pattern.compile("<todoo-(bullet|checkbox|heading)(?:\\s+[^>]*)?>(.+?)</todoo-\\1>");
+                Pattern contentPattern = Pattern.compile("<todoo-(bullet|checkbox|heading)(?:\\s+[^>]*)?>(.*?)</todoo-\\1>", Pattern.DOTALL);
                 Matcher matcher = contentPattern.matcher(firstSegment);
                 if (matcher.find()) {
-                    firstLine = matcher.group(2).trim(); // Extract the content (e.g., "1 123456")
+                    // Extract the content (e.g., "1 <b>123456</b>")
+                    String contentWithHtml = matcher.group(2).trim();
+                    // Convert HTML content to plain text, preserving the text inside tags like <b>, <i>
+                    Spanned spannedContent = HtmlCompat.fromHtml(contentWithHtml, HtmlCompat.FROM_HTML_MODE_LEGACY);
+                    firstLine = spannedContent.toString().trim();
                 } else {
-                    // If no tags, treat the segment as plain text
-                    firstLine = firstSegment.replaceAll("<.*?>", " ").replaceAll("\\s{2,}", " ").trim();
+                    // If no tags, treat the segment as plain text and clean it
+                    firstLine = firstSegment
+                            .replaceAll("<.*?>", " ")
+                            .replaceAll("\\s{2,}", " ")
+                            .trim();
                 }
             }
 
@@ -125,9 +143,14 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
                 firstLine = firstLine.substring(0, maxLength) + "...";
             }
 
+            // Configure TextView to display as a single line
             holder.tvContent.setText(firstLine);
+            holder.tvContent.setSingleLine(true);
+            holder.tvContent.setEllipsize(android.text.TextUtils.TruncateAt.END);
         } else {
             holder.tvContent.setText("No text");
+            holder.tvContent.setSingleLine(true);
+            holder.tvContent.setEllipsize(android.text.TextUtils.TruncateAt.END);
         }
 
         TextView tvPinIcon = holder.tvPinIcon;
@@ -137,26 +160,6 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
             tvPinIcon.setVisibility(View.GONE);
         }
     }
-
-    // Improved helper method to better handle bullet points
-    private String stripHtml(Context context, String html) {
-        if (html == null) {
-            return "";
-        }
-
-        // Remove custom bullet tags before conversion
-        html = html.replaceAll("<todoo-bullet>", "• ")
-                .replaceAll("</todoo-bullet>", " ")
-                .replaceAll("<todoo-checkbox[^>]*>", "□ ")
-                .replaceAll("</todoo-checkbox>", " ");
-
-        // Convert to plain text
-        Spanned spanned = HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT);
-
-        // Get plain text without excessive formatting
-        return spanned.toString().trim();
-    }
-
     private void bindTrashMode(TodoViewHolder holder, Todo todo) {
         // Display trash date
         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
