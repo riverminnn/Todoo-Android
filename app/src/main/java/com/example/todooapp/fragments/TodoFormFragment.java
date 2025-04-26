@@ -34,6 +34,7 @@ import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
 import com.example.todooapp.utils.ReminderHelper;
 import com.example.todooapp.utils.ReminderManager;
+import com.example.todooapp.utils.ReminderManager;
 import com.example.todooapp.utils.TextFormattingManager;
 import com.example.todooapp.utils.TodooDialogBuilder;
 import com.example.todooapp.utils.UndoRedoManager;
@@ -62,6 +63,8 @@ public class TodoFormFragment extends Fragment {
 
     private ReminderManager reminderManager;
 
+    private ReminderManager reminderManager;
+
     private TextWatcher contentWatcher;
 
     @Override
@@ -83,6 +86,9 @@ public class TodoFormFragment extends Fragment {
 
         // Add this line to make the checkboxes clickable
         etContent.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+
+        // Add this line to make the checkboxes clickable
+        etContent.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
     }
 
     private void initializeViews(View view) {
@@ -101,6 +107,8 @@ public class TodoFormFragment extends Fragment {
         undoRedoManager = new UndoRedoManager(etContent);
         todoViewModel = new ViewModelProvider(requireActivity()).get(TodoViewModel.class);
         reminderManager = new ReminderManager(requireContext(), getViewLifecycleOwner(), todoViewModel);
+        todoViewModel = new ViewModelProvider(requireActivity()).get(TodoViewModel.class);
+        reminderManager = new ReminderManager(requireContext(), getViewLifecycleOwner(), todoViewModel);
 
         // Get references to buttons that need to be shown/hidden
         TextView btnShare = view.findViewById(R.id.btnShare);
@@ -109,6 +117,7 @@ public class TodoFormFragment extends Fragment {
         TextView btnRedo = view.findViewById(R.id.btnRedo);
         TextView btnUndo = view.findViewById(R.id.btnUndo);
         TextView btnSave = view.findViewById(R.id.btnSave);
+        TextView btnStrikeThrough = view.findViewById(R.id.btnStrikeThrough);
         TextView btnStrikeThrough = view.findViewById(R.id.btnStrikeThrough);
 
         // Get reference to the bottom action bar and its components
@@ -177,7 +186,8 @@ public class TodoFormFragment extends Fragment {
         TextView btnUnderline = view.findViewById(R.id.btnUnderline);
         TextView btnBullet = view.findViewById(R.id.btnBullet);
 
-        // Add this in the initializeViews method after setting up the etContent listener
+        // Add this in the initializeViews method after setting up the etContent
+        // listener
         etTitle.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
                 // Hide these buttons when editing title
@@ -210,7 +220,6 @@ public class TodoFormFragment extends Fragment {
             view.findViewById(R.id.appBarLayout).requestFocus();
         });
 
-
         // In initializeViews() method
         contentWatcher = new TextWatcher() {
             private String beforeChange;
@@ -236,6 +245,8 @@ public class TodoFormFragment extends Fragment {
                     if (!currentContent.equals(beforeChange)) {
                         // Save state for undo - use current state not previous state
                         undoRedoManager.saveState(currentContent, etContent.getSelectionStart());
+                        // Save state for undo - use current state not previous state
+                        undoRedoManager.saveState(currentContent, etContent.getSelectionStart());
                         // Update the character count
                         updateCharacterCount(currentContent.length());
                     }
@@ -250,7 +261,7 @@ public class TodoFormFragment extends Fragment {
         btnHighlight.setOnClickListener(v -> applyFormatting("highlight"));
         btnBullet.setOnClickListener(v -> applyFormatting("Bullet"));
         btnStrikeThrough.setOnClickListener(v -> applyFormatting("strikethrough"));
-
+        btnStrikeThrough.setOnClickListener(v -> applyFormatting("strikethrough"));
 
         // Set up other action buttons
         TextView btnAddRecord = view.findViewById(R.id.btnAddRecord);
@@ -287,6 +298,19 @@ public class TodoFormFragment extends Fragment {
 
             // Toggle checkbox and apply/remove formatting
             textFormattingManager.toggleCheckbox(editable, start, end);
+            Editable editable = etContent.getText();
+            int cursorPosition = etContent.getSelectionStart();
+
+            // Get current line extents
+            int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), cursorPosition);
+            int start = lineExtents[0];
+            int end = lineExtents[1];
+
+            // Save state for undo before applying the checkbox
+            undoRedoManager.saveFormatState();
+
+            // Toggle checkbox and apply/remove formatting
+            textFormattingManager.toggleCheckbox(editable, start, end);
         });
     }
 
@@ -306,6 +330,8 @@ public class TodoFormFragment extends Fragment {
         if (start < end || formatType.equals("Bullet")) {
             // Save state for undo BEFORE applying the formatting
             undoRedoManager.saveFormatState();
+            // Save state for undo BEFORE applying the formatting
+            undoRedoManager.saveFormatState();
 
             // Apply formatting based on type
             switch (formatType) {
@@ -323,6 +349,9 @@ public class TodoFormFragment extends Fragment {
                     break;
                 case "Bullet":
                     textFormattingManager.toggleBullet(editable, start, end);
+                    break;
+                case "strikethrough":
+                    textFormattingManager.toggleStrikeThrough(editable, start, end);
                     break;
                 case "strikethrough":
                     textFormattingManager.toggleStrikeThrough(editable, start, end);
@@ -392,7 +421,8 @@ public class TodoFormFragment extends Fragment {
                                 todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
                                     if (currentTodo != null) {
                                         todoViewModel.moveToTrash(currentTodo);
-                                        Toast.makeText(requireContext(), "Item moved to trash", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(requireContext(), "Item moved to trash", Toast.LENGTH_SHORT)
+                                                .show();
                                         Navigation.findNavController(requireView()).popBackStack();
                                     }
                                 });
@@ -413,13 +443,12 @@ public class TodoFormFragment extends Fragment {
                             Toast.makeText(
                                     requireContext(),
                                     "Item hidden. Pull down from the top to see hidden todos.",
-                                    Toast.LENGTH_LONG
-                            ).show();
+                                    Toast.LENGTH_LONG).show();
                             Navigation.findNavController(requireView()).popBackStack();
                         }
                     });
                     return true;
-                }else if (itemId == R.id.action_reminder) {
+                } else if (itemId == R.id.action_reminder) {
                     // Show date/time picker for reminder
                     showReminderDialog();
                     return true;
@@ -433,7 +462,8 @@ public class TodoFormFragment extends Fragment {
         menuBackgroundOverlay.setOnClickListener(v -> menuBackgroundOverlay.setVisibility(View.GONE));
     }
 
-    // Modify loadTodoIfEditing to display the creation date and initial character count
+    // Modify loadTodoIfEditing to display the creation date and initial character
+    // count
     private void loadTodoIfEditing() {
         if (getArguments() != null && getArguments().getString("todoId") != null) {
             todoId = getArguments().getString("todoId");
@@ -554,8 +584,8 @@ public class TodoFormFragment extends Fragment {
                         if (etContent.hasFocus()) {
                             etContent.clearFocus();
                             requireView().findViewById(R.id.appBarLayout).requestFocus();
-                            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager)
-                                    requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) requireContext()
+                                    .getSystemService(Context.INPUT_METHOD_SERVICE);
                             imm.hideSoftInputFromWindow(etContent.getWindowToken(), 0);
                         }
                     }
@@ -599,7 +629,10 @@ public class TodoFormFragment extends Fragment {
     }
 
     // Replace showReminderDialog method with a call to the manager
+    // Replace showReminderDialog method with a call to the manager
     private void showReminderDialog() {
+        reminderManager.showReminderDialog(todoId, newTodo -> {
+            // Set title and content for the new todo
         reminderManager.showReminderDialog(todoId, newTodo -> {
             // Set title and content for the new todo
             String title = etTitle.getText().toString().trim();
@@ -612,6 +645,7 @@ public class TodoFormFragment extends Fragment {
             newTodo.setTitle(title);
             newTodo.setContent(content);
 
+            // Insert the todo
             // Insert the todo
             todoViewModel.insert(newTodo);
             Toast.makeText(requireContext(), "Todo saved with reminder", Toast.LENGTH_SHORT).show();
@@ -629,7 +663,8 @@ public class TodoFormFragment extends Fragment {
                 Field f = TextView.class.getDeclaredField("mCursorDrawableRes");
                 f.setAccessible(true);
                 f.set(editText, R.drawable.custom_cursor);
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+            }
         }
     }
 }
