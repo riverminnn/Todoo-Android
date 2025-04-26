@@ -26,10 +26,11 @@ import java.util.regex.Pattern;
 
 public class HtmlConverter {
 
-    // Convert spannable to HTML string (for saving)
     public static String toHtml(Context context, Spannable spannable) {
-        // First, convert standard spans to HTML
         String html = HtmlCompat.toHtml(spannable, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE);
+
+        // Normalize HTML to remove extra <p> tags and newlines
+        html = html.replaceAll("<p[^>]*>", "").replaceAll("</p>", "").trim();
 
         // Handle checkboxes
         CheckboxSpan[] checkboxSpans = spannable.getSpans(0, spannable.length(), CheckboxSpan.class);
@@ -37,11 +38,9 @@ public class HtmlConverter {
             int start = spannable.getSpanStart(span);
             int end = spannable.getSpanEnd(span);
             String content = spannable.toString().substring(start, end);
-            // Remove the placeholder space at the beginning
             if (content.startsWith(" ")) {
                 content = content.substring(1);
             }
-            // Replace the original text with our custom tag
             String checkboxTag = "<todoo-checkbox checked=\"" + span.isChecked() + "\">" + content + "</todoo-checkbox>";
             html = html.replaceFirst(Pattern.quote(content), checkboxTag);
         }
@@ -52,20 +51,19 @@ public class HtmlConverter {
             int start = spannable.getSpanStart(span);
             int end = spannable.getSpanEnd(span);
             String content = spannable.toString().substring(start, end);
-            // Replace with custom tag, ensuring exact match
+            // Trim trailing newlines
+            content = content.replaceAll("\\n+$", "").trim();
             String bulletTag = "<todoo-bullet>" + content + "</todoo-bullet>";
             html = html.replaceFirst(Pattern.quote(content), bulletTag);
         }
 
-        // Handle headings (H1)
+        // Handle headings
         RelativeSizeSpan[] sizeSpans = spannable.getSpans(0, spannable.length(), RelativeSizeSpan.class);
         for (RelativeSizeSpan span : sizeSpans) {
-            // Only process spans that are likely headings (around 1.5x size)
             if (Math.abs(span.getSizeChange() - 1.5f) < 0.1) {
                 int start = spannable.getSpanStart(span);
                 int end = spannable.getSpanEnd(span);
                 String content = spannable.toString().substring(start, end);
-                // Ensure bold style is preserved by checking StyleSpan
                 StyleSpan[] styleSpans = spannable.getSpans(start, end, StyleSpan.class);
                 boolean isBold = false;
                 for (StyleSpan styleSpan : styleSpans) {
@@ -74,7 +72,6 @@ public class HtmlConverter {
                         break;
                     }
                 }
-                // Replace with custom tag, preserving bold if present
                 String headingTag = "<todoo-heading" + (isBold ? " bold=\"true\"" : "") + ">" + content + "</todoo-heading>";
                 html = html.replaceFirst(Pattern.quote(content), headingTag);
             }
@@ -83,7 +80,6 @@ public class HtmlConverter {
         return html;
     }
 
-    // Convert HTML string to spannable (for loading)
     public static Spannable fromHtml(Context context, String html) {
         if (html == null || html.isEmpty()) return new SpannableString("");
 
@@ -91,7 +87,6 @@ public class HtmlConverter {
         Typeface fontAwesome = ResourcesCompat.getFont(context, R.font.fa_free_regular_400);
         int checkboxColor = ContextCompat.getColor(context, R.color.checkbox_selected);
 
-        // Store information about custom spans
         List<CustomSpanInfo> customSpans = new ArrayList<>();
 
         // Extract checkbox information
@@ -107,12 +102,12 @@ public class HtmlConverter {
         Pattern bulletPattern = Pattern.compile("<todoo-bullet>(.+?)</todoo-bullet>");
         Matcher bulletMatcher = bulletPattern.matcher(html);
         while (bulletMatcher.find()) {
-            String content = bulletMatcher.group(1);
+            String content = bulletMatcher.group(1).trim();
             customSpans.add(new CustomSpanInfo("bullet", content, false));
         }
 
-        // Extract heading information
-        Pattern headingPattern = Pattern.compile("<todoo-heading(?: bold=\"([^\"]*)\")?>(.+?)</todoo-heading>");
+        // Extract heading information with corrected regex
+        Pattern headingPattern = Pattern.compile("<todoo-heading(?:\\s+bold=\"[^\"]*\")?>(.+?)</todoo-heading>");
         Matcher headingMatcher = headingPattern.matcher(html);
         while (headingMatcher.find()) {
             String boldAttr = headingMatcher.group(1); // May be null if bold attribute is not present
@@ -121,24 +116,25 @@ public class HtmlConverter {
             customSpans.add(new CustomSpanInfo("heading", content, isBold));
         }
 
-        // Remove custom tags for standard parsing, preserving content
+        // Remove custom tags, but do NOT add newlines yet
         String standardHtml = html
                 .replaceAll("<todoo-checkbox checked=\"[^\"]*\">(.+?)</todoo-checkbox>", "$1")
                 .replaceAll("<todoo-bullet>(.+?)</todoo-bullet>", "$1")
-                .replaceAll("<todoo-heading(?: bold=\"[^\"]*\")?>(.+?)</todoo-heading>", "$1");
+                .replaceAll("<todoo-heading(?:\\s+bold=\"[^\"]*\")?>(.+?)</todoo-heading>", "$1");
 
-        // Parse the modified HTML to retain standard formatting (bold, italic, etc.)
+        // Parse HTML without extra newlines
         Spanned spanned = HtmlCompat.fromHtml(standardHtml, HtmlCompat.FROM_HTML_MODE_LEGACY);
-        SpannableStringBuilder builder = new SpannableStringBuilder(spanned);
+        // Normalize newlines
+        String text = spanned.toString().replaceAll("\n+", "\n").trim();
+        SpannableStringBuilder builder = new SpannableStringBuilder(text);
 
-        // Re-apply custom spans
-        int offset = 0; // Track offset due to checkbox space insertions
-        for (CustomSpanInfo spanInfo : customSpans) {
+        // Re-apply custom spans with proper newline handling
+        int offset = 0;
+        for (int i = 0; i < customSpans.size(); i++) {
+            CustomSpanInfo spanInfo = customSpans.get(i);
             String content = spanInfo.content;
-            // Find the exact position of the content in the builder
             int start = builder.toString().indexOf(content, offset);
             if (start == -1) {
-                // Try trimmed content to handle whitespace issues
                 content = content.trim();
                 start = builder.toString().indexOf(content, offset);
             }
@@ -147,37 +143,27 @@ public class HtmlConverter {
                 int end = start + content.length();
 
                 if ("checkbox".equals(spanInfo.type)) {
-                    // Add space for checkbox
                     builder.insert(start, " ");
-                    end++; // Adjust for inserted space
-                    offset++; // Update offset for subsequent spans
-
-                    // Apply checkbox spans
+                    end++;
+                    offset++;
                     CheckboxSpan checkboxSpan = new CheckboxSpan(textFormattingManager, fontAwesome, checkboxColor, spanInfo.isChecked);
                     CheckboxClickSpan clickSpan = new CheckboxClickSpan(checkboxSpan);
                     NonEditableSpan nonEditableSpan = new NonEditableSpan();
-
                     builder.setSpan(checkboxSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     builder.setSpan(clickSpan, start, start + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     builder.setSpan(nonEditableSpan, start, start + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-                    // Apply strikethrough if checked
                     if (spanInfo.isChecked) {
                         builder.setSpan(new StrikethroughSpan(), start + 1, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                 } else if ("bullet".equals(spanInfo.type)) {
-                    // Apply bullet span, ensuring it doesn't overwrite existing spans
                     int gapWidth = (int) (8 * context.getResources().getDisplayMetrics().density);
-                    // Check for existing BulletSpan to avoid duplication
                     android.text.style.BulletSpan[] existingBullets = builder.getSpans(start, end, android.text.style.BulletSpan.class);
                     if (existingBullets.length == 0) {
                         builder.setSpan(new android.text.style.BulletSpan(gapWidth), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                 } else if ("heading".equals(spanInfo.type)) {
-                    // Apply heading spans (larger text + bold if specified)
                     builder.setSpan(new RelativeSizeSpan(1.5f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     if (spanInfo.isChecked) { // isChecked repurposed to mean isBold for headings
-                        // Only apply bold if not already present
                         StyleSpan[] existingBold = builder.getSpans(start, end, StyleSpan.class);
                         boolean hasBold = false;
                         for (StyleSpan span : existingBold) {
@@ -192,7 +178,10 @@ public class HtmlConverter {
                     }
                 }
 
-                // Update offset to start after the current span
+                // Add a single newline after each item (except the last one)
+                if (i < customSpans.size() - 1) {
+                    end++;
+                }
                 offset = end;
             }
         }

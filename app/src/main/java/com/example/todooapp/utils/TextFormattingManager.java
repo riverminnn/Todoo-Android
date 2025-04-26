@@ -104,13 +104,11 @@ public class TextFormattingManager {
         String text = editable.toString();
         boolean spanRemoved = false;
 
-        // Adjust start and end to cover full lines
         int[] startLineExtents = getLineExtents(text, start);
         int[] endLineExtents = getLineExtents(text, end > start ? end - 1 : end);
         int adjustedStart = startLineExtents[0];
         int adjustedEnd = endLineExtents[1];
 
-        // Split the text into lines, considering full lines
         String selectedText = text.substring(adjustedStart, adjustedEnd);
         String[] lines = selectedText.split("\n");
 
@@ -122,18 +120,19 @@ public class TextFormattingManager {
                 int lineStart = currentPosition;
                 int lineEnd = currentPosition + line.length();
 
-                // Check for existing bullet spans in this line
+                // Trim trailing whitespace from the line for span application
+                String trimmedLine = line.trim();
+                int trimmedLineEnd = lineStart + trimmedLine.length();
+
                 android.text.style.BulletSpan[] existingBullets = editable.getSpans(
                         lineStart, lineEnd, android.text.style.BulletSpan.class);
 
                 if (existingBullets.length > 0) {
-                    // Remove existing bullet spans
                     for (android.text.style.BulletSpan bulletSpan : existingBullets) {
                         editable.removeSpan(bulletSpan);
                     }
                     spanRemoved = true;
                 } else {
-                    // Remove any existing checkbox spans (and associated spans)
                     CheckboxSpan[] existingCheckboxes = editable.getSpans(lineStart, lineEnd, CheckboxSpan.class);
                     if (existingCheckboxes.length > 0) {
                         for (CheckboxSpan span : existingCheckboxes) {
@@ -147,31 +146,27 @@ public class TextFormattingManager {
                         for (NonEditableSpan span : nonEditableSpans) {
                             editable.removeSpan(span);
                         }
-                        // Remove the placeholder space if it exists
                         if (editable.toString().startsWith(" ", lineStart)) {
                             editable.delete(lineStart, lineStart + 1);
-                            newEnd--; // Adjust the end position after deletion
+                            newEnd--;
                             lineEnd--;
+                            trimmedLineEnd--;
                         }
                     }
 
-                    // Remove any existing strikethrough spans
                     android.text.style.StrikethroughSpan[] strikeSpans = editable.getSpans(
                             lineStart, lineEnd, android.text.style.StrikethroughSpan.class);
                     for (android.text.style.StrikethroughSpan span : strikeSpans) {
                         editable.removeSpan(span);
                     }
 
-                    // Add a bullet span
                     int gapWidth = (int) (8 * context.getResources().getDisplayMetrics().density);
                     editable.setSpan(new android.text.style.BulletSpan(gapWidth),
-                            lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            lineStart, trimmedLineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
 
-                // Update current position to the start of the next line (+1 for the newline)
                 currentPosition = lineEnd + 1;
             } else {
-                // Move to the next line (+1 for the newline)
                 currentPosition += line.length() + 1;
             }
         }

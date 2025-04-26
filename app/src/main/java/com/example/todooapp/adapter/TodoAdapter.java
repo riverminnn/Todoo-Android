@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder> {
     private final List<Todo> todoList;
@@ -99,19 +101,31 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
 
         String htmlContent = todo.getContent();
         if (htmlContent != null && !htmlContent.trim().isEmpty()) {
-            // Strip all HTML tags completely
-            String plainText = htmlContent
-                    .replaceAll("<.*?>", " ") // Replace all HTML tags with space
-                    .replaceAll("\\s{2,}", " ") // Replace multiple spaces with single space
-                    .trim();
+            // Split the content into "lines" based on HTML tags
+            String[] lines = htmlContent.split("(?=<todoo-(bullet|checkbox|heading))");
+            String firstLine = "";
+
+            // Extract the first line by taking the content within the first tag (or plain text)
+            if (lines.length > 0) {
+                String firstSegment = lines[0].trim();
+                // Match the content within the first tag (e.g., <todoo-bullet>1</todoo-bullet>)
+                Pattern contentPattern = Pattern.compile("<todoo-(bullet|checkbox|heading)(?:\\s+[^>]*)?>(.+?)</todoo-\\1>");
+                Matcher matcher = contentPattern.matcher(firstSegment);
+                if (matcher.find()) {
+                    firstLine = matcher.group(2).trim(); // Extract the content (e.g., "1 123456")
+                } else {
+                    // If no tags, treat the segment as plain text
+                    firstLine = firstSegment.replaceAll("<.*?>", " ").replaceAll("\\s{2,}", " ").trim();
+                }
+            }
 
             // Limit content length to avoid pushing date off screen
             int maxLength = 150;
-            if (plainText.length() > maxLength) {
-                plainText = plainText.substring(0, maxLength) + "...";
+            if (firstLine.length() > maxLength) {
+                firstLine = firstLine.substring(0, maxLength) + "...";
             }
 
-            holder.tvContent.setText(plainText);
+            holder.tvContent.setText(firstLine);
         } else {
             holder.tvContent.setText("No text");
         }
