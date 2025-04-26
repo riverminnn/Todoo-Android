@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
-import android.text.Spanned;
 import android.text.TextWatcher;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.StyleSpan;
@@ -454,12 +453,15 @@ public class TodoFormFragment extends Fragment {
                 todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), todo -> {
                     if (todo != null) {
                         etTitle.setText(todo.getTitle());
+
+                        // Convert HTML to formatted Spannable
                         String htmlContent = todo.getContent();
                         if (htmlContent != null && !htmlContent.isEmpty()) {
-                            Spanned formattedContent = HtmlConverter.fromHtml(htmlContent);
-                            etContent.setText(formattedContent);
-                        } else {
-                            etContent.setText("");
+                            Spannable spannableContent = HtmlConverter.fromHtml(requireContext(), htmlContent);
+                            etContent.setText(spannableContent);
+
+                            // Set initial character count
+                            updateCharacterCount(spannableContent.length());
                         }
 
                         undoRedoManager.clearHistory();
@@ -468,9 +470,6 @@ public class TodoFormFragment extends Fragment {
                         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
                         String formattedDate = dateFormat.format(new Date(todo.getCreationDate()));
                         tvDate.setText("Created: " + formattedDate);
-
-                        // Set initial character count
-                        updateCharacterCount(etContent.getText().length());
                     }
                 });
             } catch (NumberFormatException e) {
@@ -524,12 +523,15 @@ public class TodoFormFragment extends Fragment {
 
     private void autoSaveTodo() {
         String title = etTitle.getText().toString().trim();
-        Spanned content = etContent.getText();
-        String htmlContent = HtmlConverter.toHtml(content);
 
-        if (title.isEmpty() && !content.toString().isEmpty()) {
-            // Use plain text for title preview
-            String plainContent = content.toString();
+        // Get content as Spannable to preserve formatting
+        Spannable spannableContent = etContent.getText();
+        // Convert to HTML string for storage
+        String htmlContent = HtmlConverter.toHtml(requireContext(), spannableContent);
+
+        if (title.isEmpty() && !htmlContent.isEmpty()) {
+            // Strip HTML for title preview
+            String plainContent = android.text.Html.fromHtml(htmlContent).toString();
             title = plainContent.substring(0, Math.min(plainContent.length(), 20)) + "...";
         }
 
@@ -538,7 +540,7 @@ public class TodoFormFragment extends Fragment {
         if (todoId == null) {
             Todo todo = new Todo();
             todo.setTitle(title);
-            todo.setContent(htmlContent);  // Save as HTML
+            todo.setContent(htmlContent); // Store HTML content
             todo.setTimestamp(System.currentTimeMillis());
             todo.setCreationDate(System.currentTimeMillis());
             todoViewModel.insert(todo);
@@ -551,7 +553,7 @@ public class TodoFormFragment extends Fragment {
                     if (existingTodo != null && getViewLifecycleOwner().getLifecycle().getCurrentState()
                             .isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
                         existingTodo.setTitle(finalTitle);
-                        existingTodo.setContent(htmlContent);  // Save as HTML
+                        existingTodo.setContent(htmlContent); // Store HTML content
                         existingTodo.setTimestamp(System.currentTimeMillis());
                         todoViewModel.update(existingTodo);
                         Navigation.findNavController(requireView()).popBackStack();

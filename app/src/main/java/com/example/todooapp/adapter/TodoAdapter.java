@@ -1,5 +1,6 @@
 package com.example.todooapp.adapter;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.text.Spanned;
 import android.view.LayoutInflater;
@@ -9,6 +10,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.todooapp.R;
@@ -89,12 +91,26 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
     }
 
     private void bindTodoContent(TodoViewHolder holder, Todo todo) {
-        holder.tvTitle.setText(todo.getTitle());
+        String title = todo.getTitle().replaceAll("<.*?>", " ") // Replace all HTML tags with space
+                .replaceAll("\\s{2,}", " ") // Replace multiple spaces with single space
+                .trim();
+
+        holder.tvTitle.setText(title);
 
         String htmlContent = todo.getContent();
         if (htmlContent != null && !htmlContent.trim().isEmpty()) {
-            // Get plain text by stripping HTML tags instead of formatting them
-            String plainText = stripHtml(htmlContent);
+            // Strip all HTML tags completely
+            String plainText = htmlContent
+                    .replaceAll("<.*?>", " ") // Replace all HTML tags with space
+                    .replaceAll("\\s{2,}", " ") // Replace multiple spaces with single space
+                    .trim();
+
+            // Limit content length to avoid pushing date off screen
+            int maxLength = 150;
+            if (plainText.length() > maxLength) {
+                plainText = plainText.substring(0, maxLength) + "...";
+            }
+
             holder.tvContent.setText(plainText);
         } else {
             holder.tvContent.setText("No text");
@@ -108,17 +124,23 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
         }
     }
 
-    // Add this helper method to strip HTML tags
-    private String stripHtml(String html) {
+    // Improved helper method to better handle bullet points
+    private String stripHtml(Context context, String html) {
         if (html == null) {
             return "";
         }
 
-        // First convert to plain text using fromHtml (this handles entities)
-        Spanned spanned = HtmlConverter.fromHtml(html);
+        // Remove custom bullet tags before conversion
+        html = html.replaceAll("<todoo-bullet>", "• ")
+                .replaceAll("</todoo-bullet>", " ")
+                .replaceAll("<todoo-checkbox[^>]*>", "□ ")
+                .replaceAll("</todoo-checkbox>", " ");
 
-        // Then get the string representation (without formatting)
-        return spanned.toString();
+        // Convert to plain text
+        Spanned spanned = HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT);
+
+        // Get plain text without excessive formatting
+        return spanned.toString().trim();
     }
 
     private void bindTrashMode(TodoViewHolder holder, Todo todo) {

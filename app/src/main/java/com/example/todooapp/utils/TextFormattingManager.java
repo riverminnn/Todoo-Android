@@ -198,7 +198,7 @@ public class TextFormattingManager {
                 start, end, android.text.style.StrikethroughSpan.class);
         boolean spanRemoved = false;
 
-        if (strikeSpans.length > 0) {
+        if ( strikeSpans.length > 0) {
             for (android.text.style.StrikethroughSpan span : strikeSpans) {
                 editable.removeSpan(span);
             }
