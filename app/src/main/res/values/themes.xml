@@ -4,6 +4,7 @@
         <!-- Set system bar colors -->
         <item name="android:statusBarColor">#f7f7f7</item>
         <item name="android:navigationBarColor">#f7f7f7</item>
+        <item name="colorControlActivated">@color/yellow</item>
     </style>
 
     <style name="Theme.TodooApp" parent="Base.Theme.TodooApp" />

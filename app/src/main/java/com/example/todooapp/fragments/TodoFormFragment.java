@@ -33,11 +33,13 @@ import androidx.navigation.Navigation;
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
 import com.example.todooapp.utils.ReminderHelper;
+import com.example.todooapp.utils.ReminderManager;
 import com.example.todooapp.utils.TextFormattingManager;
 import com.example.todooapp.utils.TodooDialogBuilder;
 import com.example.todooapp.utils.UndoRedoManager;
 import com.example.todooapp.viewmodel.TodoViewModel;
 
+import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -58,6 +60,8 @@ public class TodoFormFragment extends Fragment {
     private TextFormattingManager textFormattingManager;
     private UndoRedoManager undoRedoManager;
 
+    private ReminderManager reminderManager;
+
     private TextWatcher contentWatcher;
 
     @Override
@@ -76,6 +80,9 @@ public class TodoFormFragment extends Fragment {
         setupMenuButton(view);
         setupUndoRedo();
         loadTodoIfEditing();
+
+        // Add this line to make the checkboxes clickable
+        etContent.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
     }
 
     private void initializeViews(View view) {
@@ -85,9 +92,15 @@ public class TodoFormFragment extends Fragment {
         tvDate = view.findViewById(R.id.tvDate);
         tvCount = view.findViewById(R.id.tvCount);
 
+        // Apply custom cursor color
+        applyCursorColor(etTitle);
+        applyCursorColor(etContent);
+
         // Then initialize managers
         textFormattingManager = new TextFormattingManager(requireContext());
         undoRedoManager = new UndoRedoManager(etContent);
+        todoViewModel = new ViewModelProvider(requireActivity()).get(TodoViewModel.class);
+        reminderManager = new ReminderManager(requireContext(), getViewLifecycleOwner(), todoViewModel);
 
         // Get references to buttons that need to be shown/hidden
         TextView btnShare = view.findViewById(R.id.btnShare);
@@ -96,6 +109,7 @@ public class TodoFormFragment extends Fragment {
         TextView btnRedo = view.findViewById(R.id.btnRedo);
         TextView btnUndo = view.findViewById(R.id.btnUndo);
         TextView btnSave = view.findViewById(R.id.btnSave);
+        TextView btnStrikeThrough = view.findViewById(R.id.btnStrikeThrough);
 
         // Get reference to the bottom action bar and its components
         bottomActionBar = view.findViewById(R.id.bottomActionBar);
@@ -220,8 +234,8 @@ public class TodoFormFragment extends Fragment {
                 if (!undoRedoManager.isUndoOrRedoInProgress()) {
                     String currentContent = s.toString();
                     if (!currentContent.equals(beforeChange)) {
-                        // Save state for undo
-                        undoRedoManager.saveState(beforeChange, beforeCursorPos);
+                        // Save state for undo - use current state not previous state
+                        undoRedoManager.saveState(currentContent, etContent.getSelectionStart());
                         // Update the character count
                         updateCharacterCount(currentContent.length());
                     }
@@ -235,6 +249,7 @@ public class TodoFormFragment extends Fragment {
         btnUnderline.setOnClickListener(v -> applyFormatting("underline"));
         btnHighlight.setOnClickListener(v -> applyFormatting("highlight"));
         btnBullet.setOnClickListener(v -> applyFormatting("Bullet"));
+        btnStrikeThrough.setOnClickListener(v -> applyFormatting("strikethrough"));
 
 
         // Set up other action buttons
@@ -259,8 +274,19 @@ public class TodoFormFragment extends Fragment {
         });
 
         btnAddCheckbox.setOnClickListener(v -> {
-            // Implement checkbox functionality
-            Toast.makeText(requireContext(), "Checkbox feature coming soon", Toast.LENGTH_SHORT).show();
+            Editable editable = etContent.getText();
+            int cursorPosition = etContent.getSelectionStart();
+
+            // Get current line extents
+            int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), cursorPosition);
+            int start = lineExtents[0];
+            int end = lineExtents[1];
+
+            // Save state for undo before applying the checkbox
+            undoRedoManager.saveFormatState();
+
+            // Toggle checkbox and apply/remove formatting
+            textFormattingManager.toggleCheckbox(editable, start, end);
         });
     }
 
@@ -278,10 +304,8 @@ public class TodoFormFragment extends Fragment {
         }
 
         if (start < end || formatType.equals("Bullet")) {
-            // Save state for undo
-            String currentContent = editable.toString();
-            int currentCursorPos = etContent.getSelectionStart();
-            undoRedoManager.saveState(currentContent, currentCursorPos);
+            // Save state for undo BEFORE applying the formatting
+            undoRedoManager.saveFormatState();
 
             // Apply formatting based on type
             switch (formatType) {
@@ -299,6 +323,9 @@ public class TodoFormFragment extends Fragment {
                     break;
                 case "Bullet":
                     textFormattingManager.toggleBullet(editable, start, end);
+                    break;
+                case "strikethrough":
+                    textFormattingManager.toggleStrikeThrough(editable, start, end);
                     break;
             }
         } else {
@@ -571,51 +598,10 @@ public class TodoFormFragment extends Fragment {
         super.onDestroyView();
     }
 
+    // Replace showReminderDialog method with a call to the manager
     private void showReminderDialog() {
-        // Create a calendar instance with current date/time
-        final Calendar calendar = Calendar.getInstance();
-
-        // Create DatePickerDialog
-        DatePickerDialog datePickerDialog = new DatePickerDialog(
-                requireContext(),
-                (view, year, month, dayOfMonth) -> {
-                    // Set date to calendar
-                    calendar.set(Calendar.YEAR, year);
-                    calendar.set(Calendar.MONTH, month);
-                    calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-
-                    // After date is selected, show time picker
-                    TimePickerDialog timePickerDialog = new TimePickerDialog(
-                            requireContext(),
-                            (view1, hourOfDay, minute) -> {
-                                // Set time to calendar
-                                calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                                calendar.set(Calendar.MINUTE, minute);
-                                calendar.set(Calendar.SECOND, 0);
-
-                                // Save reminder time to todo
-                                setReminder(calendar.getTimeInMillis());
-                            },
-                            calendar.get(Calendar.HOUR_OF_DAY),
-                            calendar.get(Calendar.MINUTE),
-                            true
-                    );
-                    timePickerDialog.show();
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
-
-        // Set minimum date to today
-        datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
-        datePickerDialog.show();
-    }
-
-    private void setReminder(long reminderTime) {
-        // Make sure we have a valid todoId
-        if (todoId == null) {
-            // Save the todo first and then set the reminder
+        reminderManager.showReminderDialog(todoId, newTodo -> {
+            // Set title and content for the new todo
             String title = etTitle.getText().toString().trim();
             String content = etContent.getText().toString().trim();
 
@@ -623,52 +609,27 @@ public class TodoFormFragment extends Fragment {
                 title = content.substring(0, Math.min(content.length(), 20)) + "...";
             }
 
-            Todo newTodo = new Todo();
             newTodo.setTitle(title);
             newTodo.setContent(content);
-            newTodo.setTimestamp(System.currentTimeMillis());
-            newTodo.setCreationDate(System.currentTimeMillis());
-            newTodo.setHasReminder(true);
-            newTodo.setReminderTime(reminderTime);
 
+            // Insert the todo
             todoViewModel.insert(newTodo);
             Toast.makeText(requireContext(), "Todo saved with reminder", Toast.LENGTH_SHORT).show();
             Navigation.findNavController(requireView()).popBackStack();
-            return;
-        }
+        });
+    }
 
-        try {
-            long id = Long.parseLong(todoId);
-            // Use a one-time observer pattern to avoid multiple toast messages
-            final boolean[] handled = {false};
-            todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), new androidx.lifecycle.Observer<Todo>() {
-                @Override
-                public void onChanged(Todo existingTodo) {
-                    if (existingTodo != null && !handled[0] &&
-                            getViewLifecycleOwner().getLifecycle().getCurrentState()
-                                    .isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
-
-                        handled[0] = true;  // Mark as handled to prevent multiple executions
-
-                        existingTodo.setHasReminder(true);
-                        existingTodo.setReminderTime(reminderTime);
-                        todoViewModel.update(existingTodo);
-
-                        // Schedule the reminder
-                        ReminderHelper.scheduleReminder(requireContext(), existingTodo);
-
-                        // Format date for user feedback
-                        SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault());
-                        String formattedDate = sdf.format(new Date(reminderTime));
-                        Toast.makeText(requireContext(), "Reminder set for " + formattedDate, Toast.LENGTH_LONG).show();
-
-                        // Remove the observer after handling
-                        todoViewModel.getTodoById(id).removeObserver(this);
-                    }
-                }
-            });
-        } catch (NumberFormatException e) {
-            Toast.makeText(requireContext(), "Error setting reminder", Toast.LENGTH_SHORT).show();
+    private void applyCursorColor(EditText editText) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            // For Android 10+ (API 29+)
+            editText.setTextCursorDrawable(R.drawable.custom_cursor);
+        } else {
+            // For older Android versions using reflection
+            try {
+                Field f = TextView.class.getDeclaredField("mCursorDrawableRes");
+                f.setAccessible(true);
+                f.set(editText, R.drawable.custom_cursor);
+            } catch (Exception ignored) { }
         }
     }
 }

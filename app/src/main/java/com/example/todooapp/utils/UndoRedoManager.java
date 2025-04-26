@@ -42,6 +42,9 @@ public class UndoRedoManager {
     private final Stack<EditState> redoStack = new Stack<>();
     private boolean isUndoOrRedoInProgress = false;
     private OnUndoRedoStateChangedListener listener;
+    private String lastSavedText = "";
+    private int lastSelectionStart = 0;
+    private int lastSelectionEnd = 0;
 
     public interface OnUndoRedoStateChangedListener {
         void onUndoRedoStateChanged(boolean canUndo, boolean canRedo);
@@ -56,11 +59,36 @@ public class UndoRedoManager {
         notifyStateChanged();
     }
 
-    public void saveState(String text, int cursorPosition) {
-        List<SpanInfo> spans = captureSpans(new SpannableString(text));
-        undoStack.push(new EditState(text, cursorPosition, spans));
+    // New method to track formatting operations specifically
+    public void saveFormatState() {
+        String currentText = editText.getText().toString();
+        int cursorPosition = editText.getSelectionStart();
+        List<SpanInfo> spans = captureSpans(editText.getText());
+
+        // Always save format operations as individual steps
+        undoStack.push(new EditState(currentText, cursorPosition, spans));
         redoStack.clear();
         notifyStateChanged();
+
+        // Update last saved state
+        lastSavedText = currentText;
+        lastSelectionStart = editText.getSelectionStart();
+        lastSelectionEnd = editText.getSelectionEnd();
+    }
+
+    // In UndoRedoManager.java, modify the saveState method to preserve formatting
+    public void saveState(String text, int cursorPosition) {
+        // Get current spans from the EditText, not from the text parameter
+        List<SpanInfo> spans = captureSpans(editText.getText());
+
+        // Only save state if text content changed
+        if (!text.equals(lastSavedText)) {
+            undoStack.push(new EditState(text, cursorPosition, spans));
+            redoStack.clear();
+            notifyStateChanged();
+
+            lastSavedText = text;
+        }
     }
 
     public void undo() {
