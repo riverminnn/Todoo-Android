@@ -47,6 +47,16 @@ public class TodoWidget extends AppWidgetProvider {
                               int appWidgetId, int layoutId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), layoutId);
 
+        // Connect the ListView to the TodoWidgetService
+        Intent serviceIntent = new Intent(context, TodoWidgetService.class);
+        serviceIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+// Make the intent unique across different widget instances
+        serviceIntent.setData(Uri.parse(serviceIntent.toUri(Intent.URI_INTENT_SCHEME)));
+        views.setRemoteAdapter(R.id.widget_list_view, serviceIntent);
+
+// Empty view for when there's no data
+        views.setEmptyView(R.id.widget_list_view, R.id.widget_empty_view);
+
         // Set up intent for clicking on the widget header to open app
         Intent openAppIntent = new Intent(context, MainActivity.class);
         PendingIntent openAppPendingIntent = PendingIntent.getActivity(context, 0,
