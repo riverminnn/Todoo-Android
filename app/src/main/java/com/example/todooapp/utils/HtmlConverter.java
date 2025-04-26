@@ -2,16 +2,13 @@ package com.example.todooapp.utils;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.BackgroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
-import android.text.style.UnderlineSpan;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
@@ -20,6 +17,7 @@ import androidx.core.text.HtmlCompat;
 import com.example.todooapp.R;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,56 +25,73 @@ import java.util.regex.Pattern;
 public class HtmlConverter {
 
     public static String toHtml(Context context, Spannable spannable) {
-        String html = HtmlCompat.toHtml(spannable, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE);
+        SpannableStringBuilder builder = new SpannableStringBuilder(spannable);
+        StringBuilder htmlBuilder = new StringBuilder();
 
-        // Normalize HTML to remove extra <p> tags and newlines
-        html = html.replaceAll("<p[^>]*>", "").replaceAll("</p>", "").trim();
+        // Collect all spans (checkboxes, bullets, headings)
+        Object[] allSpans = builder.getSpans(0, builder.length(), Object.class);
+        List<SpanInfo> spanInfos = new ArrayList<>();
 
-        // Handle checkboxes
-        CheckboxSpan[] checkboxSpans = spannable.getSpans(0, spannable.length(), CheckboxSpan.class);
-        for (CheckboxSpan span : checkboxSpans) {
-            int start = spannable.getSpanStart(span);
-            int end = spannable.getSpanEnd(span);
-            String content = spannable.toString().substring(start, end);
-            if (content.startsWith(" ")) {
-                content = content.substring(1);
+        for (Object span : allSpans) {
+            if (span instanceof CheckboxSpan || span instanceof android.text.style.BulletSpan || span instanceof RelativeSizeSpan) {
+                int start = builder.getSpanStart(span);
+                int end = builder.getSpanEnd(span);
+                spanInfos.add(new SpanInfo(start, end, span));
             }
-            String checkboxTag = "<todoo-checkbox checked=\"" + span.isChecked() + "\">" + content + "</todoo-checkbox>";
-            html = html.replaceFirst(Pattern.quote(content), checkboxTag);
         }
 
-        // Handle bullet points
-        android.text.style.BulletSpan[] bulletSpans = spannable.getSpans(0, spannable.length(), android.text.style.BulletSpan.class);
-        for (android.text.style.BulletSpan span : bulletSpans) {
-            int start = spannable.getSpanStart(span);
-            int end = spannable.getSpanEnd(span);
-            String content = spannable.toString().substring(start, end);
-            // Trim trailing newlines
-            content = content.replaceAll("\\n+$", "").trim();
-            String bulletTag = "<todoo-bullet>" + content + "</todoo-bullet>";
-            html = html.replaceFirst(Pattern.quote(content), bulletTag);
-        }
+        // Sort spans by start position
+        spanInfos.sort(Comparator.comparingInt(s -> s.start));
 
-        // Handle headings
-        RelativeSizeSpan[] sizeSpans = spannable.getSpans(0, spannable.length(), RelativeSizeSpan.class);
-        for (RelativeSizeSpan span : sizeSpans) {
-            if (Math.abs(span.getSizeChange() - 1.5f) < 0.1) {
-                int start = spannable.getSpanStart(span);
-                int end = spannable.getSpanEnd(span);
-                String content = spannable.toString().substring(start, end);
-                StyleSpan[] styleSpans = spannable.getSpans(start, end, StyleSpan.class);
-                boolean isBold = false;
-                for (StyleSpan styleSpan : styleSpans) {
-                    if (styleSpan.getStyle() == Typeface.BOLD) {
-                        isBold = true;
-                        break;
-                    }
+        int currentPosition = 0;
+        for (SpanInfo spanInfo : spanInfos) {
+            // Append text before the span
+            if (currentPosition < spanInfo.start) {
+                CharSequence sub = builder.subSequence(currentPosition, spanInfo.start);
+                htmlBuilder.append(HtmlCompat.toHtml(new SpannableString(sub), HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE));
+            }
+
+            // Handle the span
+            if (spanInfo.span instanceof CheckboxSpan) {
+                CheckboxSpan checkboxSpan = (CheckboxSpan) spanInfo.span;
+                String content = builder.toString().substring(spanInfo.start, spanInfo.end);
+                if (content.startsWith(" ")) {
+                    content = content.substring(1); // Remove placeholder space
                 }
-                String headingTag = "<todoo-heading" + (isBold ? " bold=\"true\"" : "") + ">" + content + "</todoo-heading>";
-                html = html.replaceFirst(Pattern.quote(content), headingTag);
+                String checkboxTag = "<todoo-checkbox checked=\"" + checkboxSpan.isChecked() + "\">" + content + "</todoo-checkbox>";
+                htmlBuilder.append(checkboxTag);
+            } else if (spanInfo.span instanceof android.text.style.BulletSpan) {
+                String content = builder.toString().substring(spanInfo.start, spanInfo.end).trim();
+                String bulletTag = "<todoo-bullet>" + content + "</todoo-bullet>";
+                htmlBuilder.append(bulletTag);
+            } else if (spanInfo.span instanceof RelativeSizeSpan) {
+                RelativeSizeSpan sizeSpan = (RelativeSizeSpan) spanInfo.span;
+                if (Math.abs(sizeSpan.getSizeChange() - 1.5f) < 0.1) {
+                    String content = builder.toString().substring(spanInfo.start, spanInfo.end);
+                    boolean isBold = false;
+                    StyleSpan[] styleSpans = builder.getSpans(spanInfo.start, spanInfo.end, StyleSpan.class);
+                    for (StyleSpan styleSpan : styleSpans) {
+                        if (styleSpan.getStyle() == Typeface.BOLD) {
+                            isBold = true;
+                            break;
+                        }
+                    }
+                    String headingTag = "<todoo-heading" + (isBold ? " bold=\"true\"" : "") + ">" + content + "</todoo-heading>";
+                    htmlBuilder.append(headingTag);
+                }
             }
+
+            currentPosition = spanInfo.end;
         }
 
+        // Append remaining text
+        if (currentPosition < builder.length()) {
+            CharSequence sub = builder.subSequence(currentPosition, builder.length());
+            htmlBuilder.append(HtmlCompat.toHtml(new SpannableString(sub), HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE));
+        }
+
+        // Clean up extra paragraph tags
+        String html = htmlBuilder.toString().replaceAll("<p[^>]*>", "").replaceAll("</p>", "").trim();
         return html;
     }
 
@@ -87,118 +102,89 @@ public class HtmlConverter {
         Typeface fontAwesome = ResourcesCompat.getFont(context, R.font.fa_free_regular_400);
         int checkboxColor = ContextCompat.getColor(context, R.color.checkbox_selected);
 
-        List<CustomSpanInfo> customSpans = new ArrayList<>();
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+        int lastEnd = 0;
 
-        // Extract checkbox information
-        Pattern checkboxPattern = Pattern.compile("<todoo-checkbox checked=\"([^\"]*)\">(.+?)</todoo-checkbox>");
-        Matcher checkboxMatcher = checkboxPattern.matcher(html);
-        while (checkboxMatcher.find()) {
-            boolean isChecked = Boolean.parseBoolean(checkboxMatcher.group(1));
-            String content = checkboxMatcher.group(2);
-            customSpans.add(new CustomSpanInfo("checkbox", content, isChecked));
-        }
+        // Pattern to match custom tags
+        Pattern tagPattern = Pattern.compile("<todoo-(checkbox|bullet|heading)(?:\\s+[^>]*)?>(.+?)</todoo-\\1>");
+        Matcher matcher = tagPattern.matcher(html);
 
-        // Extract bullet information
-        Pattern bulletPattern = Pattern.compile("<todoo-bullet>(.+?)</todoo-bullet>");
-        Matcher bulletMatcher = bulletPattern.matcher(html);
-        while (bulletMatcher.find()) {
-            String content = bulletMatcher.group(1).trim();
-            customSpans.add(new CustomSpanInfo("bullet", content, false));
-        }
-
-        // Extract heading information with corrected regex
-        Pattern headingPattern = Pattern.compile("<todoo-heading(?:\\s+bold=\"[^\"]*\")?>(.+?)</todoo-heading>");
-        Matcher headingMatcher = headingPattern.matcher(html);
-        while (headingMatcher.find()) {
-            String boldAttr = headingMatcher.group(1); // May be null if bold attribute is not present
-            boolean isBold = "true".equals(boldAttr);
-            String content = headingMatcher.group(2);
-            customSpans.add(new CustomSpanInfo("heading", content, isBold));
-        }
-
-        // Remove custom tags, but do NOT add newlines yet
-        String standardHtml = html
-                .replaceAll("<todoo-checkbox checked=\"[^\"]*\">(.+?)</todoo-checkbox>", "$1")
-                .replaceAll("<todoo-bullet>(.+?)</todoo-bullet>", "$1")
-                .replaceAll("<todoo-heading(?:\\s+bold=\"[^\"]*\")?>(.+?)</todoo-heading>", "$1");
-
-        // Parse HTML without extra newlines
-        Spanned spanned = HtmlCompat.fromHtml(standardHtml, HtmlCompat.FROM_HTML_MODE_LEGACY);
-        // Normalize newlines
-        String text = spanned.toString().replaceAll("\n+", "\n").trim();
-        SpannableStringBuilder builder = new SpannableStringBuilder(text);
-
-        // Re-apply custom spans with proper newline handling
-        int offset = 0;
-        for (int i = 0; i < customSpans.size(); i++) {
-            CustomSpanInfo spanInfo = customSpans.get(i);
-            String content = spanInfo.content;
-            int start = builder.toString().indexOf(content, offset);
-            if (start == -1) {
-                content = content.trim();
-                start = builder.toString().indexOf(content, offset);
+        while (matcher.find()) {
+            // Append text before the tag
+            if (lastEnd < matcher.start()) {
+                String before = html.substring(lastEnd, matcher.start());
+                Spanned spannedBefore = HtmlCompat.fromHtml(before, HtmlCompat.FROM_HTML_MODE_LEGACY);
+                builder.append(spannedBefore);
             }
 
-            if (start >= 0) {
-                int end = start + content.length();
+            String type = matcher.group(1);
+            String content = matcher.group(2);
 
-                if ("checkbox".equals(spanInfo.type)) {
-                    builder.insert(start, " ");
-                    end++;
-                    offset++;
-                    CheckboxSpan checkboxSpan = new CheckboxSpan(textFormattingManager, fontAwesome, checkboxColor, spanInfo.isChecked);
-                    CheckboxClickSpan clickSpan = new CheckboxClickSpan(checkboxSpan);
-                    NonEditableSpan nonEditableSpan = new NonEditableSpan();
-                    builder.setSpan(checkboxSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    builder.setSpan(clickSpan, start, start + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    builder.setSpan(nonEditableSpan, start, start + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    if (spanInfo.isChecked) {
-                        builder.setSpan(new StrikethroughSpan(), start + 1, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    }
-                } else if ("bullet".equals(spanInfo.type)) {
-                    int gapWidth = (int) (8 * context.getResources().getDisplayMetrics().density);
-                    android.text.style.BulletSpan[] existingBullets = builder.getSpans(start, end, android.text.style.BulletSpan.class);
-                    if (existingBullets.length == 0) {
-                        builder.setSpan(new android.text.style.BulletSpan(gapWidth), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    }
-                } else if ("heading".equals(spanInfo.type)) {
-                    builder.setSpan(new RelativeSizeSpan(1.5f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    if (spanInfo.isChecked) { // isChecked repurposed to mean isBold for headings
-                        StyleSpan[] existingBold = builder.getSpans(start, end, StyleSpan.class);
-                        boolean hasBold = false;
-                        for (StyleSpan span : existingBold) {
-                            if (span.getStyle() == Typeface.BOLD) {
-                                hasBold = true;
-                                break;
-                            }
-                        }
-                        if (!hasBold) {
-                            builder.setSpan(new StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        }
-                    }
-                }
+            if ("checkbox".equals(type)) {
+                // Extract checked state
+                Pattern checkedPattern = Pattern.compile("checked=\"(true|false)\"");
+                Matcher checkedMatcher = checkedPattern.matcher(matcher.group(0));
+                boolean isChecked = checkedMatcher.find() && "true".equals(checkedMatcher.group(1));
 
-                // Add a single newline after each item (except the last one)
-                if (i < customSpans.size() - 1) {
-                    end++;
+                // Insert placeholder space and content
+                int start = builder.length();
+                builder.append(" "); // Placeholder for checkbox
+                builder.append(content);
+                int end = builder.length();
+
+                // Apply checkbox spans
+                CheckboxSpan checkboxSpan = new CheckboxSpan(textFormattingManager, fontAwesome, checkboxColor, isChecked);
+                CheckboxClickSpan clickSpan = new CheckboxClickSpan(checkboxSpan);
+                NonEditableSpan nonEditableSpan = new NonEditableSpan();
+                builder.setSpan(checkboxSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.setSpan(clickSpan, start, start + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.setSpan(nonEditableSpan, start, start + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                if (isChecked) {
+                    builder.setSpan(new StrikethroughSpan(), start + 1, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
-                offset = end;
+            } else if ("bullet".equals(type)) {
+                int start = builder.length();
+                builder.append(content);
+                int end = builder.length();
+                int gapWidth = (int) (8 * context.getResources().getDisplayMetrics().density);
+                builder.setSpan(new android.text.style.BulletSpan(gapWidth), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else if ("heading".equals(type)) {
+                Pattern boldPattern = Pattern.compile("bold=\"(true|false)\"");
+                Matcher boldMatcher = boldPattern.matcher(matcher.group(0));
+                boolean isBold = boldMatcher.find() && "true".equals(boldMatcher.group(1));
+
+                int start = builder.length();
+                builder.append(content);
+                int end = builder.length();
+                builder.setSpan(new RelativeSizeSpan(1.5f), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                if (isBold) {
+                    builder.setSpan(new StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
             }
+
+            lastEnd = matcher.end();
+        }
+
+        // Append remaining text
+        if (lastEnd < html.length()) {
+            String remaining = html.substring(lastEnd);
+            Spanned spannedRemaining = HtmlCompat.fromHtml(remaining, HtmlCompat.FROM_HTML_MODE_LEGACY);
+            builder.append(spannedRemaining);
         }
 
         return builder;
     }
 
-    // Helper class to store custom span information
-    private static class CustomSpanInfo {
-        String type;
-        String content;
-        boolean isChecked; // Used for checkbox checked state or bold state for headings
+    // Helper class for span information
+    private static class SpanInfo {
+        int start;
+        int end;
+        Object span;
 
-        CustomSpanInfo(String type, String content, boolean isChecked) {
-            this.type = type;
-            this.content = content;
-            this.isChecked = isChecked;
+        SpanInfo(int start, int end, Object span) {
+            this.start = start;
+            this.end = end;
+            this.span = span;
         }
     }
 }
