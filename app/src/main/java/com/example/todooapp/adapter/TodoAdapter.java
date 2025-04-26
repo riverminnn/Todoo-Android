@@ -1,6 +1,7 @@
 package com.example.todooapp.adapter;
 
 import android.graphics.Color;
+import android.text.Spanned;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
+import com.example.todooapp.utils.HtmlConverter;
 import com.google.android.material.card.MaterialCardView;
 
 import java.text.SimpleDateFormat;
@@ -88,15 +90,35 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
 
     private void bindTodoContent(TodoViewHolder holder, Todo todo) {
         holder.tvTitle.setText(todo.getTitle());
-        String content = todo.getContent();
-        holder.tvContent.setText(content == null || content.trim().isEmpty() ? "No text" : content);
-        // Add inside the bindTodoContent method in TodoAdapter.java
+
+        String htmlContent = todo.getContent();
+        if (htmlContent != null && !htmlContent.trim().isEmpty()) {
+            // Get plain text by stripping HTML tags instead of formatting them
+            String plainText = stripHtml(htmlContent);
+            holder.tvContent.setText(plainText);
+        } else {
+            holder.tvContent.setText("No text");
+        }
+
         TextView tvPinIcon = holder.tvPinIcon;
         if (todo.isPinned()) {
             tvPinIcon.setVisibility(View.VISIBLE);
         } else {
             tvPinIcon.setVisibility(View.GONE);
         }
+    }
+
+    // Add this helper method to strip HTML tags
+    private String stripHtml(String html) {
+        if (html == null) {
+            return "";
+        }
+
+        // First convert to plain text using fromHtml (this handles entities)
+        Spanned spanned = HtmlConverter.fromHtml(html);
+
+        // Then get the string representation (without formatting)
+        return spanned.toString();
     }
 
     private void bindTrashMode(TodoViewHolder holder, Todo todo) {
