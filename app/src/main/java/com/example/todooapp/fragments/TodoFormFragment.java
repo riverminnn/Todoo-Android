@@ -6,19 +6,26 @@ import android.app.TimePickerDialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.TextWatcher;
+import android.text.style.BackgroundColorSpan;
+import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
@@ -26,12 +33,16 @@ import androidx.navigation.Navigation;
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
 import com.example.todooapp.utils.ReminderHelper;
+import com.example.todooapp.utils.TextFormattingManager;
 import com.example.todooapp.utils.TodooDialogBuilder;
+import com.example.todooapp.utils.UndoRedoManager;
 import com.example.todooapp.viewmodel.TodoViewModel;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Stack;
 
@@ -39,16 +50,15 @@ public class TodoFormFragment extends Fragment {
     private EditText etTitle, etContent;
     private TodoViewModel todoViewModel;
     private String todoId = null;
-
-    // Add these as class variables
     private TextView tvDate, tvCount;
+    private LinearLayout bottomActionBar;
+    private LinearLayout defaultOptionsContainer;
+    private LinearLayout textOptionsContainer;
+    private TextView btnToggleTextOptions;
+    private TextFormattingManager textFormattingManager;
+    private UndoRedoManager undoRedoManager;
 
-    // Add these fields to your TodoFormFragment class
-    private final Stack<String> undoStack = new Stack<>();
-    private final Stack<String> redoStack = new Stack<>();
-    private String lastSavedContent = "";
     private TextWatcher contentWatcher;
-    private boolean isUndoOrRedoInProgress = false;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -69,10 +79,15 @@ public class TodoFormFragment extends Fragment {
     }
 
     private void initializeViews(View view) {
+        // Initialize managers
         etTitle = view.findViewById(R.id.etTitle);
         etContent = view.findViewById(R.id.etContent);
         tvDate = view.findViewById(R.id.tvDate);
         tvCount = view.findViewById(R.id.tvCount);
+
+        // Then initialize managers
+        textFormattingManager = new TextFormattingManager(requireContext());
+        undoRedoManager = new UndoRedoManager(etContent);
 
         // Get references to buttons that need to be shown/hidden
         TextView btnShare = view.findViewById(R.id.btnShare);
@@ -82,13 +97,23 @@ public class TodoFormFragment extends Fragment {
         TextView btnUndo = view.findViewById(R.id.btnUndo);
         TextView btnSave = view.findViewById(R.id.btnSave);
 
+        // Get reference to the bottom action bar and its components
+        bottomActionBar = view.findViewById(R.id.bottomActionBar);
+        defaultOptionsContainer = view.findViewById(R.id.defaultOptionsContainer);
+        textOptionsContainer = view.findViewById(R.id.textOptionsContainer);
+        btnToggleTextOptions = view.findViewById(R.id.btnToggleTextOptions);
+
         // Initially hide the editing buttons
         btnRedo.setVisibility(View.GONE);
         btnUndo.setVisibility(View.GONE);
         btnSave.setVisibility(View.GONE);
 
+        // Set up focus listener on etContent
         etContent.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
+                // Show bottom action bar when etContent is focused
+                bottomActionBar.setVisibility(View.VISIBLE);
+
                 // Hide these buttons when editing content
                 btnShare.setVisibility(View.GONE);
                 btnBackground.setVisibility(View.GONE);
@@ -99,6 +124,9 @@ public class TodoFormFragment extends Fragment {
                 btnUndo.setVisibility(View.VISIBLE);
                 btnSave.setVisibility(View.VISIBLE);
             } else {
+                // Hide bottom action bar when etContent loses focus
+                bottomActionBar.setVisibility(View.GONE);
+
                 // Restore original buttons when not editing
                 btnShare.setVisibility(View.VISIBLE);
                 btnBackground.setVisibility(View.VISIBLE);
@@ -110,6 +138,30 @@ public class TodoFormFragment extends Fragment {
                 btnSave.setVisibility(View.GONE);
             }
         });
+
+        // Set up toggle functionality for text formatting options
+        btnToggleTextOptions.setOnClickListener(v -> {
+            if (textOptionsContainer.getVisibility() == View.VISIBLE) {
+                // Switch back to default options
+                textOptionsContainer.setVisibility(View.GONE);
+                defaultOptionsContainer.setVisibility(View.VISIBLE);
+                // Change icon from X back to T
+                btnToggleTextOptions.setText("\u0054"); // T icon
+            } else {
+                // Switch to text formatting options
+                defaultOptionsContainer.setVisibility(View.GONE);
+                textOptionsContainer.setVisibility(View.VISIBLE);
+                // Change icon from T to X
+                btnToggleTextOptions.setText("\uf00d"); // X icon (f00d)
+            }
+        });
+
+        // Set up click listeners for formatting buttons
+        TextView btnBold = view.findViewById(R.id.btnBold);
+        TextView btnHighlight = view.findViewById(R.id.btnHighlight);
+        TextView btnItalic = view.findViewById(R.id.btnItalic);
+        TextView btnUnderline = view.findViewById(R.id.btnUnderline);
+        TextView btnBullet = view.findViewById(R.id.btnBullet);
 
         // Add this in the initializeViews method after setting up the etContent listener
         etTitle.setOnFocusChangeListener((v, hasFocus) -> {
@@ -144,21 +196,114 @@ public class TodoFormFragment extends Fragment {
             view.findViewById(R.id.appBarLayout).requestFocus();
         });
 
-        // Setup character count listener for etContent
-        etContent.addTextChangedListener(new TextWatcher() {
+
+        // In initializeViews() method
+        contentWatcher = new TextWatcher() {
+            private String beforeChange;
+            private int beforeCursorPos;
+
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                if (!undoRedoManager.isUndoOrRedoInProgress()) {
+                    beforeChange = s.toString();
+                    beforeCursorPos = etContent.getSelectionStart();
+                }
             }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Not needed
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-                updateCharacterCount(s.length());
+                if (!undoRedoManager.isUndoOrRedoInProgress()) {
+                    String currentContent = s.toString();
+                    if (!currentContent.equals(beforeChange)) {
+                        // Save state for undo
+                        undoRedoManager.saveState(beforeChange, beforeCursorPos);
+                        // Update the character count
+                        updateCharacterCount(currentContent.length());
+                    }
+                }
             }
+        };
+        etContent.addTextChangedListener(contentWatcher);
+
+        btnBold.setOnClickListener(v -> applyFormatting("bold"));
+        btnItalic.setOnClickListener(v -> applyFormatting("italic"));
+        btnUnderline.setOnClickListener(v -> applyFormatting("underline"));
+        btnHighlight.setOnClickListener(v -> applyFormatting("highlight"));
+        btnBullet.setOnClickListener(v -> applyFormatting("Bullet"));
+
+
+        // Set up other action buttons
+        TextView btnAddRecord = view.findViewById(R.id.btnAddRecord);
+        TextView btnAddImage = view.findViewById(R.id.btnAddImage);
+        TextView btnLocation = view.findViewById(R.id.btnLocation);
+        TextView btnAddCheckbox = view.findViewById(R.id.btnAddCheckbox);
+
+        btnAddRecord.setOnClickListener(v -> {
+            // Implement record functionality
+            Toast.makeText(requireContext(), "Record feature coming soon", Toast.LENGTH_SHORT).show();
         });
+
+        btnAddImage.setOnClickListener(v -> {
+            // Implement add image functionality
+            Toast.makeText(requireContext(), "Add image feature coming soon", Toast.LENGTH_SHORT).show();
+        });
+
+        btnLocation.setOnClickListener(v -> {
+            // Implement location functionality
+            Toast.makeText(requireContext(), "Location feature coming soon", Toast.LENGTH_SHORT).show();
+        });
+
+        btnAddCheckbox.setOnClickListener(v -> {
+            // Implement checkbox functionality
+            Toast.makeText(requireContext(), "Checkbox feature coming soon", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    // Update applyFormatting to save state before formatting
+    private void applyFormatting(String formatType) {
+        Editable editable = etContent.getText();
+        int start = etContent.getSelectionStart();
+        int end = etContent.getSelectionEnd();
+
+        // For bullet points, get the current line if no selection
+        if (formatType.equals("Bullet") && start == end) {
+            int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), start);
+            start = lineExtents[0];
+            end = lineExtents[1];
+        }
+
+        if (start < end || formatType.equals("Bullet")) {
+            // Save state for undo
+            String currentContent = editable.toString();
+            int currentCursorPos = etContent.getSelectionStart();
+            undoRedoManager.saveState(currentContent, currentCursorPos);
+
+            // Apply formatting based on type
+            switch (formatType) {
+                case "bold":
+                    textFormattingManager.toggleBold(editable, start, end);
+                    break;
+                case "italic":
+                    textFormattingManager.toggleItalic(editable, start, end);
+                    break;
+                case "underline":
+                    textFormattingManager.toggleUnderline(editable, start, end);
+                    break;
+                case "highlight":
+                    textFormattingManager.toggleHighlight(editable, start, end);
+                    break;
+                case "Bullet":
+                    textFormattingManager.toggleBullet(editable, start, end);
+                    break;
+            }
+        } else {
+            Toast.makeText(requireContext(), "Please select text to format", Toast.LENGTH_SHORT).show();
+        }
     }
 
     // Update character count method
@@ -273,7 +418,7 @@ public class TodoFormFragment extends Fragment {
                         String content = todo.getContent();
                         etContent.setText(content);
 
-                        clearHistory();
+                        undoRedoManager.clearHistory();
 
                         // Format and display creation date
                         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
@@ -341,7 +486,7 @@ public class TodoFormFragment extends Fragment {
             title = content.substring(0, Math.min(content.length(), 20)) + "...";
         }
 
-        clearHistory();
+        undoRedoManager.clearHistory();
 
         if (todoId == null) {
             Todo todo = new Todo();
@@ -405,116 +550,16 @@ public class TodoFormFragment extends Fragment {
     private void setupUndoRedo() {
         TextView btnUndo = requireView().findViewById(R.id.btnUndo);
         TextView btnRedo = requireView().findViewById(R.id.btnRedo);
-        EditText etContent = requireView().findViewById(R.id.etContent);
 
-        // Always hide buttons initially
-        btnUndo.setVisibility(View.GONE);
-        btnRedo.setVisibility(View.GONE);
+        btnUndo.setOnClickListener(v -> undoRedoManager.undo());
+        btnRedo.setOnClickListener(v -> undoRedoManager.redo());
 
-        // Initialize with current content
-        lastSavedContent = etContent.getText().toString();
-
-        // Set up TextWatcher to track changes
-        contentWatcher = new TextWatcher() {
-            private String beforeChange;
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                if (!isUndoOrRedoInProgress) {
-                    beforeChange = s.toString();
-                }
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Not needed
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (!isUndoOrRedoInProgress) {
-                    String currentContent = s.toString();
-                    // Only save meaningful changes to avoid excessive history
-                    if (!currentContent.equals(beforeChange)) {
-                        undoStack.push(beforeChange);
-                        // Clear redo stack when new changes are made
-                        redoStack.clear();
-                    }
-                }
-                updateUndoRedoButtons();
-            }
-        };
-
-        etContent.addTextChangedListener(contentWatcher);
-
-        // Set up button click listeners
-        btnUndo.setOnClickListener(v -> performUndo());
-        btnRedo.setOnClickListener(v -> performRedo());
-
-        // Initial button state
-        updateUndoRedoButtons();
-    }
-
-    private void performUndo() {
-        if (undoStack.isEmpty()) return;
-
-        EditText etContent = requireView().findViewById(R.id.etContent);
-        String currentContent = etContent.getText().toString();
-
-        // Save current state for redo
-        redoStack.push(currentContent);
-
-        // Get previous state
-        String previousContent = undoStack.pop();
-
-        // Update content without triggering TextWatcher
-        isUndoOrRedoInProgress = true;
-        etContent.setText(previousContent);
-        etContent.setSelection(previousContent.length());
-        isUndoOrRedoInProgress = false;
-
-        updateUndoRedoButtons();
-    }
-
-    private void performRedo() {
-        if (redoStack.isEmpty()) return;
-
-        EditText etContent = requireView().findViewById(R.id.etContent);
-        String currentContent = etContent.getText().toString();
-
-        // Save current state for undo
-        undoStack.push(currentContent);
-
-        // Get next state
-        String nextContent = redoStack.pop();
-
-        // Update content without triggering TextWatcher
-        isUndoOrRedoInProgress = true;
-        etContent.setText(nextContent);
-        etContent.setSelection(nextContent.length());
-        isUndoOrRedoInProgress = false;
-
-        updateUndoRedoButtons();
-    }
-
-    private void updateUndoRedoButtons() {
-        TextView btnUndo = requireView().findViewById(R.id.btnUndo);
-        TextView btnRedo = requireView().findViewById(R.id.btnRedo);
-
-        btnUndo.setEnabled(!undoStack.isEmpty());
-        btnRedo.setEnabled(!redoStack.isEmpty());
-
-        // Visual feedback for enabled/disabled state
-        btnUndo.setAlpha(undoStack.isEmpty() ? 0.5f : 1.0f);
-        btnRedo.setAlpha(redoStack.isEmpty() ? 0.5f : 1.0f);
-    }
-
-    // Call this method in onViewCreated after initializing your views
-    private void clearHistory() {
-        undoStack.clear();
-        redoStack.clear();
-        lastSavedContent = etContent.getText().toString();
-        updateUndoRedoButtons();
+        undoRedoManager.setOnUndoRedoStateChangedListener((canUndo, canRedo) -> {
+            btnUndo.setEnabled(canUndo);
+            btnRedo.setEnabled(canRedo);
+            btnUndo.setAlpha(canUndo ? 1.0f : 0.5f);
+            btnRedo.setAlpha(canRedo ? 1.0f : 0.5f);
+        });
     }
 
     // Make sure to remove the TextWatcher in onDestroyView
@@ -524,14 +569,6 @@ public class TodoFormFragment extends Fragment {
             etContent.removeTextChangedListener(contentWatcher);
         }
         super.onDestroyView();
-    }
-
-    public String getLastSavedContent() {
-        return lastSavedContent;
-    }
-
-    public void setLastSavedContent(String lastSavedContent) {
-        this.lastSavedContent = lastSavedContent;
     }
 
     private void showReminderDialog() {

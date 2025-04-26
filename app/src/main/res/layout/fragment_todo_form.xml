@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".fragments.TodoFormFragment"
-    android:background="@color/white">
+    android:background="@color/white"
+    tools:context=".fragments.TodoFormFragment">
 
     <!-- Add this right after the ConstraintLayout opening tag -->
     <View
@@ -13,9 +13,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#80000000"
-        android:visibility="gone"
         android:clickable="true"
         android:focusable="true"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -52,8 +52,8 @@
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
                 android:background="@drawable/back_button_ripple"
-                android:fontFamily="@font/fa_free_solid_400"
                 android:contentDescription="More options"
+                android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf142;"
                 android:textColor="@android:color/black"
                 android:textSize="20sp" />
@@ -65,8 +65,8 @@
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
                 android:background="@drawable/back_button_ripple"
-                android:fontFamily="@font/fa_free_solid_400"
                 android:contentDescription="Background"
+                android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf553;"
                 android:textColor="@android:color/black"
                 android:textSize="20sp" />
@@ -78,8 +78,8 @@
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
                 android:background="@drawable/back_button_ripple"
-                android:fontFamily="@font/fa_free_solid_400"
                 android:contentDescription="Share"
+                android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf08e;"
                 android:textColor="@android:color/black"
                 android:textSize="20sp" />
@@ -91,12 +91,12 @@
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
                 android:background="@drawable/back_button_ripple"
-                android:fontFamily="@font/fa_free_solid_400"
                 android:contentDescription="Redo"
+                android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf00c;"
                 android:textColor="@android:color/black"
                 android:textSize="20sp"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/btnRedo"
@@ -105,12 +105,12 @@
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
                 android:background="@drawable/back_button_ripple"
-                android:fontFamily="@font/fa_free_solid_400"
                 android:contentDescription="Redo"
+                android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf2f9;"
                 android:textColor="@android:color/black"
                 android:textSize="20sp"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/btnUndo"
@@ -119,12 +119,12 @@
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
                 android:background="@drawable/back_button_ripple"
-                android:fontFamily="@font/fa_free_solid_400"
                 android:contentDescription="Redo"
+                android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf2ea;"
                 android:textColor="@android:color/black"
                 android:textSize="20sp"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
         </androidx.appcompat.widget.Toolbar>
     </com.google.android.material.appbar.AppBarLayout>
@@ -163,8 +163,8 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="  |  "
             android:fontFamily="@font/google_sans"
+            android:text="  |  "
             android:textColor="#9E9E9E"
             android:textSize="12sp" />
 
@@ -185,7 +185,8 @@
         android:layout_marginHorizontal="24dp"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
-        android:fillViewport="true"  app:layout_constraintBottom_toBottomOf="parent"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/infoLayout">
 
         <EditText
@@ -198,12 +199,184 @@
             android:hint="Start typing"
             android:importantForAutofill="no"
             android:inputType="textMultiLine|textCapSentences"
+            android:lineSpacingExtra="10sp"
+            android:nestedScrollingEnabled="true"
             android:overScrollMode="ifContentScrolls"
             android:scrollbarStyle="insideOverlay"
             android:scrollbars="vertical"
-            android:nestedScrollingEnabled="true"
-            android:lineSpacingExtra="10sp"/>
+            android:textSize="16sp" />
 
     </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:id="@+id/bottomActionBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="4dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:id="@+id/defaultOptionsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="visible">
+
+            <TextView
+                android:id="@+id/btnAddRecord"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/back_button_ripple"
+                android:contentDescription="Add Record"
+
+                android:fontFamily="@font/fa_free_solid_400"
+                android:padding="12dp"
+                android:text="\uf130"
+                android:textColor="@android:color/black"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/btnAddImage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/back_button_ripple"
+                android:contentDescription="Add Image"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:padding="12dp"
+                android:text="\uf03e"
+                android:textColor="@android:color/black"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/btnLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/back_button_ripple"
+                android:contentDescription="Add Image"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:padding="12dp"
+                android:text="\uf3c5"
+                android:textColor="@android:color/black"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/btnAddCheckbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/back_button_ripple"
+                android:contentDescription="Add Checkbox"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:padding="12dp"
+                android:text="\uf14a"
+                android:textColor="@android:color/black"
+                android:textSize="20sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/textOptionsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btnBold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/back_button_ripple"
+                android:contentDescription="Bold"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:padding="12dp"
+                android:text="\u0042"
+                android:textColor="@android:color/black"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnHighlight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/back_button_ripple"
+                android:contentDescription="Highlight"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:padding="12dp"
+                android:text="\uf591"
+                android:textColor="@android:color/black"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/btnItalic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/back_button_ripple"
+                android:contentDescription="Italic"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:padding="12dp"
+                android:text="\uf033"
+                android:textColor="@android:color/black"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/btnUnderline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/back_button_ripple"
+                android:contentDescription="Underline"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:padding="12dp"
+                android:text="\uf0cd"
+                android:textColor="@android:color/black"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/btnBullet"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/back_button_ripple"
+                android:contentDescription="Underline"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:padding="12dp"
+                android:text="\uf0ca"
+                android:textColor="@android:color/black"
+                android:textSize="20sp" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/btnToggleTextOptions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/back_button_ripple"
+            android:contentDescription="Text Options"
+            android:fontFamily="@font/fa_free_solid_400"
+            android:padding="12dp"
+            android:text="\u0054"
+            android:textColor="@android:color/black"
+            android:textSize="20sp" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

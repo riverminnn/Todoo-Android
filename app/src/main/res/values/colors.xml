@@ -3,4 +3,5 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="checkbox_selected">#feb317</color>
+    <color name="highlightColor">#FFDE21</color>
 </resources>
