@@ -30,7 +30,7 @@ public class CheckboxSpan implements LeadingMarginSpan {
         this.isChecked = isChecked;
         this.scale = 1.3f;
         this.gapWidth = 32; // Gap between checkbox and text
-        this.indentWidth = 40; // Indent width to push the line (adjust as needed)
+        this.indentWidth = 0; // Indent width to push the line (adjust as needed)
         textPaint = new TextPaint();
         textPaint.setTypeface(fontAwesome);
     }

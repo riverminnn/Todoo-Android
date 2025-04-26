@@ -153,18 +153,21 @@ public class TodoFormFragment extends Fragment {
             }
         });
 
-        // Set up toggle functionality for text formatting options
         btnToggleTextOptions.setOnClickListener(v -> {
-            if (textOptionsContainer.getVisibility() == View.VISIBLE) {
+            // Get references to the ScrollViews
+            View textOptionsScrollView = requireView().findViewById(R.id.textOptionsScrollView);
+            View defaultOptionsScrollView = requireView().findViewById(R.id.defaultOptionsScrollView);
+
+            if (textOptionsScrollView.getVisibility() == View.VISIBLE) {
                 // Switch back to default options
-                textOptionsContainer.setVisibility(View.GONE);
-                defaultOptionsContainer.setVisibility(View.VISIBLE);
+                textOptionsScrollView.setVisibility(View.GONE);
+                defaultOptionsScrollView.setVisibility(View.VISIBLE);
                 // Change icon from X back to T
                 btnToggleTextOptions.setText("\u0054"); // T icon
             } else {
                 // Switch to text formatting options
-                defaultOptionsContainer.setVisibility(View.GONE);
-                textOptionsContainer.setVisibility(View.VISIBLE);
+                defaultOptionsScrollView.setVisibility(View.GONE);
+                textOptionsScrollView.setVisibility(View.VISIBLE);
                 // Change icon from T to X
                 btnToggleTextOptions.setText("\uf00d"); // X icon (f00d)
             }
@@ -176,6 +179,7 @@ public class TodoFormFragment extends Fragment {
         TextView btnItalic = view.findViewById(R.id.btnItalic);
         TextView btnUnderline = view.findViewById(R.id.btnUnderline);
         TextView btnBullet = view.findViewById(R.id.btnBullet);
+        TextView btnH1 = view.findViewById(R.id.btnH1);
 
         // Add this in the initializeViews method after setting up the etContent listener
         etTitle.setOnFocusChangeListener((v, hasFocus) -> {
@@ -209,7 +213,6 @@ public class TodoFormFragment extends Fragment {
             // Request focus on a different view to truly clear focus
             view.findViewById(R.id.appBarLayout).requestFocus();
         });
-
 
         // In initializeViews() method
         contentWatcher = new TextWatcher() {
@@ -250,6 +253,7 @@ public class TodoFormFragment extends Fragment {
         btnHighlight.setOnClickListener(v -> applyFormatting("highlight"));
         btnBullet.setOnClickListener(v -> applyFormatting("Bullet"));
         btnStrikeThrough.setOnClickListener(v -> applyFormatting("strikethrough"));
+        btnH1.setOnClickListener(v -> applyFormatting("heading"));
 
 
         // Set up other action buttons
@@ -275,61 +279,67 @@ public class TodoFormFragment extends Fragment {
 
         btnAddCheckbox.setOnClickListener(v -> {
             Editable editable = etContent.getText();
-            int cursorPosition = etContent.getSelectionStart();
+            int start = etContent.getSelectionStart();
+            int end = etContent.getSelectionEnd();
 
-            // Get current line extents
-            int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), cursorPosition);
-            int start = lineExtents[0];
-            int end = lineExtents[1];
-
-            // Save state for undo before applying the checkbox
+            // Save state for undo before applying any checkbox
             undoRedoManager.saveFormatState();
 
-            // Toggle checkbox and apply/remove formatting
-            textFormattingManager.toggleCheckbox(editable, start, end);
+            // Apply checkbox to the selected range (or current line if no selection)
+            if (start == end) {
+                // No selection: apply to the current line
+                int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), start);
+                textFormattingManager.toggleCheckbox(editable, lineExtents[0], lineExtents[1]);
+            } else {
+                // Selection: apply to all lines in the range
+                textFormattingManager.toggleCheckbox(editable, start, end);
+            }
         });
     }
 
-    // Update applyFormatting to save state before formatting
     private void applyFormatting(String formatType) {
         Editable editable = etContent.getText();
         int start = etContent.getSelectionStart();
         int end = etContent.getSelectionEnd();
 
-        // For bullet points, get the current line if no selection
-        if (formatType.equals("Bullet") && start == end) {
-            int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), start);
-            start = lineExtents[0];
-            end = lineExtents[1];
-        }
+        // Save state for undo BEFORE applying any formatting
+        undoRedoManager.saveFormatState();
 
-        if (start < end || formatType.equals("Bullet")) {
-            // Save state for undo BEFORE applying the formatting
-            undoRedoManager.saveFormatState();
-
-            // Apply formatting based on type
-            switch (formatType) {
-                case "bold":
-                    textFormattingManager.toggleBold(editable, start, end);
-                    break;
-                case "italic":
-                    textFormattingManager.toggleItalic(editable, start, end);
-                    break;
-                case "underline":
-                    textFormattingManager.toggleUnderline(editable, start, end);
-                    break;
-                case "highlight":
-                    textFormattingManager.toggleHighlight(editable, start, end);
-                    break;
-                case "Bullet":
-                    textFormattingManager.toggleBullet(editable, start, end);
-                    break;
-                case "strikethrough":
-                    textFormattingManager.toggleStrikeThrough(editable, start, end);
-                    break;
+        if (start < end || formatType.equals("Bullet") || formatType.equals("heading")) {
+            if (formatType.equals("Bullet")) {
+                // Apply bullet formatting to all lines in the selected range
+                textFormattingManager.toggleBullet(editable, start, end);
+            } else if (formatType.equals("heading")) {
+                // Apply heading formatting to all lines in the selected range
+                textFormattingManager.toggleHeading(editable, start, end);
+            } else {
+                // Handle other formatting types
+                switch (formatType) {
+                    case "bold":
+                        textFormattingManager.toggleBold(editable, start, end);
+                        break;
+                    case "italic":
+                        textFormattingManager.toggleItalic(editable, start, end);
+                        break;
+                    case "underline":
+                        textFormattingManager.toggleUnderline(editable, start, end);
+                        break;
+                    case "highlight":
+                        textFormattingManager.toggleHighlight(editable, start, end);
+                        break;
+                    case "strikethrough":
+                        textFormattingManager.toggleStrikeThrough(editable, start, end);
+                        break;
+                }
             }
         } else {
-            Toast.makeText(requireContext(), "Please select text to format", Toast.LENGTH_SHORT).show();
+            // Single line handling (cursor position only)
+            if (formatType.equals("Bullet")) {
+                int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), start);
+                textFormattingManager.toggleBullet(editable, lineExtents[0], lineExtents[1]);
+            } else {
+                Toast.makeText(requireContext(), "Please select text to format", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
@@ -419,7 +429,7 @@ public class TodoFormFragment extends Fragment {
                         }
                     });
                     return true;
-                }else if (itemId == R.id.action_reminder) {
+                } else if (itemId == R.id.action_reminder) {
                     // Show date/time picker for reminder
                     showReminderDialog();
                     return true;
@@ -547,28 +557,35 @@ public class TodoFormFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
+        // Remove any existing callbacks first to avoid duplicates
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
                 new androidx.activity.OnBackPressedCallback(true) {
                     @Override
                     public void handleOnBackPressed() {
-                        if (etContent.hasFocus()) {
+                        if (etContent.hasFocus() || etTitle.hasFocus()) {
+                            // First clear focus from edit fields
                             etContent.clearFocus();
+                            etTitle.clearFocus();
+                            // Request focus on a non-input view
                             requireView().findViewById(R.id.appBarLayout).requestFocus();
-                            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager)
-                                    requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                            // Hide keyboard
+                            android.view.inputmethod.InputMethodManager imm =
+                                    (android.view.inputmethod.InputMethodManager)
+                                            requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                             imm.hideSoftInputFromWindow(etContent.getWindowToken(), 0);
-                        }
-                    }
-                });
 
-        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
-                new androidx.activity.OnBackPressedCallback(true) {
-                    @Override
-                    public void handleOnBackPressed() {
+                            // Important: don't navigate back yet, just clear focus
+                            return;
+                        }
+
+                        // If we're not handling focus clearing, save if needed and go back
                         String title = etTitle.getText().toString().trim();
                         String content = etContent.getText().toString().trim();
                         if (!title.isEmpty() || !content.isEmpty()) {
                             autoSaveTodo();
+                        } else {
+                            // No content to save, just go back
+                            Navigation.findNavController(requireView()).popBackStack();
                         }
                     }
                 });
