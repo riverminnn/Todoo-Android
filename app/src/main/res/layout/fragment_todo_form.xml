@@ -42,8 +42,8 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="&#xf060;"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/btnMenu"
@@ -55,8 +55,8 @@
                 android:contentDescription="More options"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf142;"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/btnBackground"
@@ -68,8 +68,8 @@
                 android:contentDescription="Background"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf553;"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/btnShare"
@@ -81,8 +81,8 @@
                 android:contentDescription="Share"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf08e;"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/btnSave"
@@ -94,8 +94,8 @@
                 android:contentDescription="Redo"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf00c;"
-                android:textColor="@android:color/black"
-                android:textSize="20sp"
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp"
                 android:visibility="gone" />
 
             <TextView
@@ -108,8 +108,8 @@
                 android:contentDescription="Redo"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf2f9;"
-                android:textColor="@android:color/black"
-                android:textSize="20sp"
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp"
                 android:visibility="gone" />
 
             <TextView
@@ -122,8 +122,8 @@
                 android:contentDescription="Redo"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf2ea;"
-                android:textColor="@android:color/black"
-                android:textSize="20sp"
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp"
                 android:visibility="gone" />
 
         </androidx.appcompat.widget.Toolbar>
@@ -197,6 +197,7 @@
             android:fontFamily="@font/google_sans"
             android:gravity="top|start"
             android:hint="Start typing"
+            android:paddingTop="6dp"
             android:importantForAutofill="no"
             android:inputType="textMultiLine|textCapSentences"
             android:lineSpacingExtra="10sp"
@@ -212,10 +213,10 @@
         android:id="@+id/bottomActionBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@drawable/bg_layout_border_top_gray_200"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="8dp"
+        android:paddingHorizontal="16dp"
         android:paddingVertical="4dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -237,12 +238,11 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/back_button_ripple"
                 android:contentDescription="Add Record"
-
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="\uf130"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/btnAddImage"
@@ -254,8 +254,8 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="\uf03e"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/btnLocation"
@@ -267,8 +267,8 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="\uf3c5"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/btnAddCheckbox"
@@ -280,8 +280,8 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="\uf14a"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
         </LinearLayout>
 
@@ -302,8 +302,8 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="\u0042"
-                android:textColor="@android:color/black"
-                android:textSize="20sp"
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -316,8 +316,8 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="\uf591"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/btnItalic"
@@ -329,8 +329,8 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="\uf033"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/btnUnderline"
@@ -342,8 +342,21 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="\uf0cd"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
+
+            <TextView
+                android:id="@+id/btnStrikeThrough"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/back_button_ripple"
+                android:contentDescription="Strike Through"
+                android:fontFamily="@font/fa_free_solid_400"
+                android:padding="12dp"
+                android:text="\uf0cc"
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/btnBullet"
@@ -355,8 +368,8 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="\uf0ca"
-                android:textColor="@android:color/black"
-                android:textSize="20sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="24sp" />
 
         </LinearLayout>
 
@@ -374,8 +387,8 @@
             android:fontFamily="@font/fa_free_solid_400"
             android:padding="12dp"
             android:text="\u0054"
-            android:textColor="@android:color/black"
-            android:textSize="20sp" />
+            android:textColor="@color/dark_gray"
+            android:textSize="24sp" />
 
     </LinearLayout>
 

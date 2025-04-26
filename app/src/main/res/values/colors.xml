@@ -4,4 +4,6 @@
     <color name="white">#FFFFFFFF</color>
     <color name="checkbox_selected">#feb317</color>
     <color name="highlightColor">#FFDE21</color>
+    <color name="gray_200">#EEEEEE</color>
+    <color name="dark_gray">#2d2d2d</color>
 </resources>
