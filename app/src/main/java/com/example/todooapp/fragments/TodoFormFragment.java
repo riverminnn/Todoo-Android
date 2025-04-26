@@ -32,6 +32,7 @@ import androidx.navigation.Navigation;
 
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
+import com.example.todooapp.utils.HtmlConverter;
 import com.example.todooapp.utils.ReminderHelper;
 import com.example.todooapp.utils.ReminderManager;
 import com.example.todooapp.utils.TextFormattingManager;
@@ -452,8 +453,16 @@ public class TodoFormFragment extends Fragment {
                 todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), todo -> {
                     if (todo != null) {
                         etTitle.setText(todo.getTitle());
-                        String content = todo.getContent();
-                        etContent.setText(content);
+
+                        // Convert HTML to formatted Spannable
+                        String htmlContent = todo.getContent();
+                        if (htmlContent != null && !htmlContent.isEmpty()) {
+                            Spannable spannableContent = HtmlConverter.fromHtml(requireContext(), htmlContent);
+                            etContent.setText(spannableContent);
+
+                            // Set initial character count
+                            updateCharacterCount(spannableContent.length());
+                        }
 
                         undoRedoManager.clearHistory();
 
@@ -461,9 +470,6 @@ public class TodoFormFragment extends Fragment {
                         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
                         String formattedDate = dateFormat.format(new Date(todo.getCreationDate()));
                         tvDate.setText("Created: " + formattedDate);
-
-                        // Set initial character count
-                        updateCharacterCount(content != null ? content.length() : 0);
                     }
                 });
             } catch (NumberFormatException e) {
@@ -517,10 +523,16 @@ public class TodoFormFragment extends Fragment {
 
     private void autoSaveTodo() {
         String title = etTitle.getText().toString().trim();
-        String content = etContent.getText().toString().trim();
 
-        if (title.isEmpty() && !content.isEmpty()) {
-            title = content.substring(0, Math.min(content.length(), 20)) + "...";
+        // Get content as Spannable to preserve formatting
+        Spannable spannableContent = etContent.getText();
+        // Convert to HTML string for storage
+        String htmlContent = HtmlConverter.toHtml(requireContext(), spannableContent);
+
+        if (title.isEmpty() && !htmlContent.isEmpty()) {
+            // Strip HTML for title preview
+            String plainContent = android.text.Html.fromHtml(htmlContent).toString();
+            title = plainContent.substring(0, Math.min(plainContent.length(), 20)) + "...";
         }
 
         undoRedoManager.clearHistory();
@@ -528,7 +540,7 @@ public class TodoFormFragment extends Fragment {
         if (todoId == null) {
             Todo todo = new Todo();
             todo.setTitle(title);
-            todo.setContent(content);
+            todo.setContent(htmlContent); // Store HTML content
             todo.setTimestamp(System.currentTimeMillis());
             todo.setCreationDate(System.currentTimeMillis());
             todoViewModel.insert(todo);
@@ -541,7 +553,7 @@ public class TodoFormFragment extends Fragment {
                     if (existingTodo != null && getViewLifecycleOwner().getLifecycle().getCurrentState()
                             .isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
                         existingTodo.setTitle(finalTitle);
-                        existingTodo.setContent(content);
+                        existingTodo.setContent(htmlContent); // Store HTML content
                         existingTodo.setTimestamp(System.currentTimeMillis());
                         todoViewModel.update(existingTodo);
                         Navigation.findNavController(requireView()).popBackStack();

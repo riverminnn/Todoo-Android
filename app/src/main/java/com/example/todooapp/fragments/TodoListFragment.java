@@ -243,6 +243,12 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         categoryChipGroup.addView(allChip);
 
         todoViewModel.getAllUniqueCategories().observe(getViewLifecycleOwner(), categories -> {
+            // Remove all existing category chips (except "All" which is at index 0)
+            if (categoryChipGroup.getChildCount() > 1) {
+                categoryChipGroup.removeViews(1, categoryChipGroup.getChildCount() - 1);
+            }
+
+            // Add the new category chips
             for (String category : categories) {
                 if (category != null && !category.isEmpty()) {
                     Chip chip = createCategoryChip(category);
