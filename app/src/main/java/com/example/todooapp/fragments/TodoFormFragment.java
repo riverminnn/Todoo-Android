@@ -28,6 +28,7 @@ import com.example.todooapp.viewmodel.TodoViewModel;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Stack;
 
 public class TodoFormFragment extends Fragment {
     private EditText etTitle, etContent;
@@ -36,6 +37,13 @@ public class TodoFormFragment extends Fragment {
 
     // Add these as class variables
     private TextView tvDate, tvCount;
+
+    // Add these fields to your TodoFormFragment class
+    private final Stack<String> undoStack = new Stack<>();
+    private final Stack<String> redoStack = new Stack<>();
+    private String lastSavedContent = "";
+    private TextWatcher contentWatcher;
+    private boolean isUndoOrRedoInProgress = false;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -51,6 +59,7 @@ public class TodoFormFragment extends Fragment {
         initializeViewModel();
         setupBackButton(view);
         setupMenuButton(view);
+        setupUndoRedo();
         loadTodoIfEditing();
     }
 
@@ -60,13 +69,85 @@ public class TodoFormFragment extends Fragment {
         tvDate = view.findViewById(R.id.tvDate);
         tvCount = view.findViewById(R.id.tvCount);
 
+        // Get references to buttons that need to be shown/hidden
+        TextView btnShare = view.findViewById(R.id.btnShare);
+        TextView btnBackground = view.findViewById(R.id.btnBackground);
+        TextView btnMenu = view.findViewById(R.id.btnMenu);
+        TextView btnRedo = view.findViewById(R.id.btnRedo);
+        TextView btnUndo = view.findViewById(R.id.btnUndo);
+        TextView btnSave = view.findViewById(R.id.btnSave);
+
+        // Initially hide the editing buttons
+        btnRedo.setVisibility(View.GONE);
+        btnUndo.setVisibility(View.GONE);
+        btnSave.setVisibility(View.GONE);
+
+        etContent.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                // Hide these buttons when editing content
+                btnShare.setVisibility(View.GONE);
+                btnBackground.setVisibility(View.GONE);
+                btnMenu.setVisibility(View.GONE);
+
+                // Show editing buttons
+                btnRedo.setVisibility(View.VISIBLE);
+                btnUndo.setVisibility(View.VISIBLE);
+                btnSave.setVisibility(View.VISIBLE);
+            } else {
+                // Restore original buttons when not editing
+                btnShare.setVisibility(View.VISIBLE);
+                btnBackground.setVisibility(View.VISIBLE);
+                btnMenu.setVisibility(View.VISIBLE);
+
+                // Hide editing buttons
+                btnRedo.setVisibility(View.GONE);
+                btnUndo.setVisibility(View.GONE);
+                btnSave.setVisibility(View.GONE);
+            }
+        });
+
+        // Add this in the initializeViews method after setting up the etContent listener
+        etTitle.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                // Hide these buttons when editing title
+                btnShare.setVisibility(View.GONE);
+                btnBackground.setVisibility(View.GONE);
+                btnMenu.setVisibility(View.GONE);
+
+                // Show only save button (redo and undo not needed for title)
+                btnRedo.setVisibility(View.GONE);
+                btnUndo.setVisibility(View.GONE);
+                btnSave.setVisibility(View.VISIBLE);
+            } else {
+                // Restore original buttons when not editing
+                btnShare.setVisibility(View.VISIBLE);
+                btnBackground.setVisibility(View.VISIBLE);
+                btnMenu.setVisibility(View.VISIBLE);
+
+                // Hide editing buttons
+                btnRedo.setVisibility(View.GONE);
+                btnUndo.setVisibility(View.GONE);
+                btnSave.setVisibility(View.GONE);
+            }
+        });
+
+        // Setup save button click listener
+        btnSave.setOnClickListener(v -> {
+            autoSaveTodo();
+            etContent.clearFocus();
+            // Request focus on a different view to truly clear focus
+            view.findViewById(R.id.appBarLayout).requestFocus();
+        });
+
         // Setup character count listener for etContent
         etContent.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
 
             @Override
             public void afterTextChanged(Editable s) {
@@ -152,6 +233,8 @@ public class TodoFormFragment extends Fragment {
                         String content = todo.getContent();
                         etContent.setText(content);
 
+                        clearHistory();
+
                         // Format and display creation date
                         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
                         String formattedDate = dateFormat.format(new Date(todo.getCreationDate()));
@@ -210,21 +293,6 @@ public class TodoFormFragment extends Fragment {
                 .navigate(R.id.action_todoFormFragment_to_categoryManagementFragment, bundle);
     }
 
-    private void updateTodoCategory(String category) {
-        try {
-            long id = Long.parseLong(todoId);
-            todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), todo -> {
-                if (todo != null && getViewLifecycleOwner().getLifecycle().getCurrentState()
-                        .isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
-                    todoViewModel.updateTodoCategory(id, category);
-                    Toast.makeText(requireContext(), "Todo moved to " + category, Toast.LENGTH_SHORT).show();
-                }
-            });
-        } catch (NumberFormatException e) {
-            Toast.makeText(requireContext(), "Invalid todo ID", Toast.LENGTH_SHORT).show();
-        }
-    }
-
     private void autoSaveTodo() {
         String title = etTitle.getText().toString().trim();
         String content = etContent.getText().toString().trim();
@@ -232,6 +300,8 @@ public class TodoFormFragment extends Fragment {
         if (title.isEmpty() && !content.isEmpty()) {
             title = content.substring(0, Math.min(content.length(), 20)) + "...";
         }
+
+        clearHistory();
 
         if (todoId == null) {
             Todo todo = new Todo();
@@ -257,7 +327,6 @@ public class TodoFormFragment extends Fragment {
                 });
             } catch (NumberFormatException e) {
                 Toast.makeText(requireContext(), "Invalid todo ID", Toast.LENGTH_SHORT).show();
-                Navigation.findNavController(requireView()).popBackStack();
             }
         }
     }
@@ -270,15 +339,158 @@ public class TodoFormFragment extends Fragment {
                 new androidx.activity.OnBackPressedCallback(true) {
                     @Override
                     public void handleOnBackPressed() {
+                        if (etContent.hasFocus()) {
+                            etContent.clearFocus();
+                            requireView().findViewById(R.id.appBarLayout).requestFocus();
+                            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager)
+                                    requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                            imm.hideSoftInputFromWindow(etContent.getWindowToken(), 0);
+                        }
+                    }
+                });
+
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                new androidx.activity.OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
                         String title = etTitle.getText().toString().trim();
                         String content = etContent.getText().toString().trim();
                         if (!title.isEmpty() || !content.isEmpty()) {
                             autoSaveTodo();
-                        } else {
-                            this.remove();
-                            requireActivity().getOnBackPressedDispatcher().onBackPressed();
                         }
                     }
                 });
+    }
+
+    private void setupUndoRedo() {
+        TextView btnUndo = requireView().findViewById(R.id.btnUndo);
+        TextView btnRedo = requireView().findViewById(R.id.btnRedo);
+        EditText etContent = requireView().findViewById(R.id.etContent);
+
+        // Always hide buttons initially
+        btnUndo.setVisibility(View.GONE);
+        btnRedo.setVisibility(View.GONE);
+
+        // Initialize with current content
+        lastSavedContent = etContent.getText().toString();
+
+        // Set up TextWatcher to track changes
+        contentWatcher = new TextWatcher() {
+            private String beforeChange;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                if (!isUndoOrRedoInProgress) {
+                    beforeChange = s.toString();
+                }
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Not needed
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (!isUndoOrRedoInProgress) {
+                    String currentContent = s.toString();
+                    // Only save meaningful changes to avoid excessive history
+                    if (!currentContent.equals(beforeChange)) {
+                        undoStack.push(beforeChange);
+                        // Clear redo stack when new changes are made
+                        redoStack.clear();
+                    }
+                }
+                updateUndoRedoButtons();
+            }
+        };
+
+        etContent.addTextChangedListener(contentWatcher);
+
+        // Set up button click listeners
+        btnUndo.setOnClickListener(v -> performUndo());
+        btnRedo.setOnClickListener(v -> performRedo());
+
+        // Initial button state
+        updateUndoRedoButtons();
+    }
+
+    private void performUndo() {
+        if (undoStack.isEmpty()) return;
+
+        EditText etContent = requireView().findViewById(R.id.etContent);
+        String currentContent = etContent.getText().toString();
+
+        // Save current state for redo
+        redoStack.push(currentContent);
+
+        // Get previous state
+        String previousContent = undoStack.pop();
+
+        // Update content without triggering TextWatcher
+        isUndoOrRedoInProgress = true;
+        etContent.setText(previousContent);
+        etContent.setSelection(previousContent.length());
+        isUndoOrRedoInProgress = false;
+
+        updateUndoRedoButtons();
+    }
+
+    private void performRedo() {
+        if (redoStack.isEmpty()) return;
+
+        EditText etContent = requireView().findViewById(R.id.etContent);
+        String currentContent = etContent.getText().toString();
+
+        // Save current state for undo
+        undoStack.push(currentContent);
+
+        // Get next state
+        String nextContent = redoStack.pop();
+
+        // Update content without triggering TextWatcher
+        isUndoOrRedoInProgress = true;
+        etContent.setText(nextContent);
+        etContent.setSelection(nextContent.length());
+        isUndoOrRedoInProgress = false;
+
+        updateUndoRedoButtons();
+    }
+
+    private void updateUndoRedoButtons() {
+        TextView btnUndo = requireView().findViewById(R.id.btnUndo);
+        TextView btnRedo = requireView().findViewById(R.id.btnRedo);
+
+        btnUndo.setEnabled(!undoStack.isEmpty());
+        btnRedo.setEnabled(!redoStack.isEmpty());
+
+        // Visual feedback for enabled/disabled state
+        btnUndo.setAlpha(undoStack.isEmpty() ? 0.5f : 1.0f);
+        btnRedo.setAlpha(redoStack.isEmpty() ? 0.5f : 1.0f);
+    }
+
+    // Call this method in onViewCreated after initializing your views
+    private void clearHistory() {
+        undoStack.clear();
+        redoStack.clear();
+        lastSavedContent = etContent.getText().toString();
+        updateUndoRedoButtons();
+    }
+
+    // Make sure to remove the TextWatcher in onDestroyView
+    @Override
+    public void onDestroyView() {
+        if (contentWatcher != null && etContent != null) {
+            etContent.removeTextChangedListener(contentWatcher);
+        }
+        super.onDestroyView();
+    }
+
+    public String getLastSavedContent() {
+        return lastSavedContent;
+    }
+
+    public void setLastSavedContent(String lastSavedContent) {
+        this.lastSavedContent = lastSavedContent;
     }
 }
