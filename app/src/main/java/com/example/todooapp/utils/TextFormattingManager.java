@@ -5,6 +5,7 @@ import android.graphics.Typeface;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.style.BackgroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 
@@ -15,7 +16,7 @@ import com.example.todooapp.R;
 
 public class TextFormattingManager {
     private final Context context;
-    private Typeface fontAwesome;
+    private final Typeface fontAwesome;
 
     public TextFormattingManager(Context context) {
         this.context = context;
@@ -153,6 +154,13 @@ public class TextFormattingManager {
                             trimmedLineEnd--;
                         }
                     }
+                    // Remove any heading formatting
+                    RelativeSizeSpan[] headingSpans = editable.getSpans(lineStart, lineEnd, RelativeSizeSpan.class);
+                    for (RelativeSizeSpan span : headingSpans) {
+                        if (Math.abs(span.getSizeChange() - 1.5f) < 0.1) {
+                            editable.removeSpan(span);
+                        }
+                    }
 
                     // Remove strikethrough spans (since bullet doesn't use strikethrough)
                     android.text.style.StrikethroughSpan[] strikeSpans = editable.getSpans(
@@ -266,6 +274,13 @@ public class TextFormattingManager {
                         editable.removeSpan(bulletSpan);
                     }
 
+                    RelativeSizeSpan[] headingSpans = editable.getSpans(lineStart, lineEnd, RelativeSizeSpan.class);
+                    for (RelativeSizeSpan span : headingSpans) {
+                        if (Math.abs(span.getSizeChange() - 1.5f) < 0.1) {
+                            editable.removeSpan(span);
+                        }
+                    }
+
                     // Insert a placeholder space for the checkbox
                     editable.insert(lineStart, " ");
                     newEnd++;
@@ -326,7 +341,19 @@ public class TextFormattingManager {
                 int lineStart = currentPosition;
                 int lineEnd = currentPosition + line.length();
 
-                // Check if this line already has heading formatting
+                // Check if this line has bullet or checkbox formatting
+                android.text.style.BulletSpan[] bulletSpans = editable.getSpans(
+                        lineStart, lineEnd, android.text.style.BulletSpan.class);
+                CheckboxSpan[] checkboxSpans = editable.getSpans(
+                        lineStart, lineEnd, CheckboxSpan.class);
+
+                // Skip formatting if line has bullet or checkbox
+                if (bulletSpans.length > 0 || checkboxSpans.length > 0) {
+                    currentPosition += line.length() + 1;
+                    continue;
+                }
+
+                // Continue with existing heading toggle logic
                 android.text.style.RelativeSizeSpan[] sizeSpans = editable.getSpans(
                         lineStart, lineEnd, android.text.style.RelativeSizeSpan.class);
 
@@ -358,7 +385,7 @@ public class TextFormattingManager {
             }
 
             // Update current position to the start of the next line
-            currentPosition += line.length() + 1; // +1 for the newline
+            currentPosition += line.length() + 1;
         }
 
         return !spanRemoved;

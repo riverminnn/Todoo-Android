@@ -6,11 +6,9 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.BackgroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
-import android.text.style.UnderlineSpan;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
@@ -33,6 +31,9 @@ public class HtmlConverter {
         Object[] allSpans = builder.getSpans(0, builder.length(), Object.class);
         List<SpanInfo> spanInfos = new ArrayList<>();
 
+        // Track processed ranges to prevent duplicates
+        boolean[] processed = new boolean[builder.length()];
+
         for (Object span : allSpans) {
             if (span instanceof CheckboxSpan || span instanceof android.text.style.BulletSpan || span instanceof RelativeSizeSpan) {
                 int start = builder.getSpanStart(span);
@@ -52,6 +53,19 @@ public class HtmlConverter {
             }
 
             if (spanInfo.span instanceof CheckboxSpan) {
+                // Check if this range has already been processed
+                boolean alreadyProcessed = false;
+                for (int i = spanInfo.start; i < spanInfo.end; i++) {
+                    if (processed[i]) {
+                        alreadyProcessed = true;
+                        break;
+                    }
+                }
+
+                if (alreadyProcessed) {
+                    continue; // Skip this span if its range was already processed
+                }
+
                 CheckboxSpan checkboxSpan = (CheckboxSpan) spanInfo.span;
                 int start = spanInfo.start;
                 int end = spanInfo.end;
@@ -100,6 +114,11 @@ public class HtmlConverter {
                     String headingTag = "<todoo-heading" + (isBold ? " bold=\"true\"" : "") + ">" + contentHtml + "</todoo-heading>";
                     htmlBuilder.append(headingTag);
                 }
+            }
+
+            // Mark this range as processed
+            for (int i = spanInfo.start; i < spanInfo.end; i++) {
+                processed[i] = true;
             }
 
             currentPosition = spanInfo.end;
