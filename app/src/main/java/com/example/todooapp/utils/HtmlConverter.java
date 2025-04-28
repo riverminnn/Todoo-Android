@@ -34,6 +34,8 @@ public class HtmlConverter {
 
     private static final String AUDIO_TAG_PATTERN = "<todoo-audio src=\"([^\"]+)\"\\s*/>";
 
+    private static final String LOCATION_TAG_PATTERN = "<todoo-location lat=\"([\\d.-]+)\" lng=\"([\\d.-]+)\" name=\"([^\"]+)\"\\s*/>";
+
     // Helper class to track spans and their positions
     static class SpanInfo {
         int start;
@@ -84,6 +86,19 @@ public class HtmlConverter {
             }
         }
 
+        // Process location spans similarly
+        LocationSpan[] locationSpans = builder.getSpans(0, builder.length(), LocationSpan.class);
+        for (LocationSpan span : locationSpans) {
+            int start = builder.getSpanStart(span);
+            int end = builder.getSpanEnd(span);
+            spanInfos.add(new SpanInfo(start, end, span));
+
+            // Mark range as processed
+            for (int i = start; i < end && i < processed.length; i++) {
+                processed[i] = true;
+            }
+        }
+
         // Then add all other span types
         for (Object span : allSpans) {
             if (span instanceof CheckboxSpan ||
@@ -115,6 +130,16 @@ public class HtmlConverter {
                 AudioSpan audioSpan = (AudioSpan) spanInfo.span;
                 String audioPath = audioSpan.getAudioPath();
                 htmlBuilder.append("<todoo-audio src=\"").append(audioPath).append("\"/>");
+                currentPosition = spanInfo.end;
+            } else if (spanInfo.span instanceof LocationSpan) {
+                LocationSpan locationSpan = (LocationSpan) spanInfo.span;
+                htmlBuilder.append("<todoo-location lat=\"")
+                        .append(locationSpan.getLatitude())
+                        .append("\" lng=\"")
+                        .append(locationSpan.getLongitude())
+                        .append("\" name=\"")
+                        .append(locationSpan.getLocationName())
+                        .append("\"/>");
                 currentPosition = spanInfo.end;
             } else if (spanInfo.span instanceof CheckboxSpan) {
                 CheckboxSpan checkboxSpan = (CheckboxSpan) spanInfo.span;
@@ -201,6 +226,7 @@ public class HtmlConverter {
         // First extract all image paths and map them to positions
         List<String> imagePaths = new ArrayList<>();
         List<String> audioPaths = new ArrayList<>();
+        List<LocationInfo> locationInfos = new ArrayList<>();
 
         // Extract image paths from both formats (for compatibility)
         extractImagePaths(html, IMAGE_TAG_PATTERN, imagePaths);
@@ -225,15 +251,17 @@ public class HtmlConverter {
         Pattern tagPattern = Pattern.compile("<todoo-(checkbox|bullet|heading)(?:\\s+[^>]*)?>(.*?)</todoo-\\1>", Pattern.DOTALL);
         Matcher matcher = tagPattern.matcher(processedHtml);
 
+        Pattern locationPattern = Pattern.compile(LOCATION_TAG_PATTERN);
+        Matcher locationMatcher = locationPattern.matcher(html);
+
+
         // Track image placeholders
         List<Integer> imagePlaceholderPositions = new ArrayList<>();
         List<Integer> audioPlaceholderPositions = new ArrayList<>();
 
-        // After processing the HTML content, handle the audio spans
         Pattern audioPattern = Pattern.compile("🔊 Audio Recording");
         Matcher audioMatcher = audioPattern.matcher(result);
         int audioIndex = 0;
-
 
         while (audioMatcher.find() && audioIndex < audioPaths.size()) {
             int start = audioMatcher.start();
@@ -246,6 +274,15 @@ public class HtmlConverter {
             result.setSpan(audioSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             result.setSpan(clickSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+
+        while (locationMatcher.find()) {
+            double lat = Double.parseDouble(locationMatcher.group(1));
+            double lng = Double.parseDouble(locationMatcher.group(2));
+            String name = locationMatcher.group(3);
+            locationInfos.add(new LocationInfo(lat, lng, name));
+        }
+
+        processedHtml = processedHtml.replaceAll(LOCATION_TAG_PATTERN, "📍 Location: $3");
 
         while (matcher.find()) {
             // Append text before the tag
@@ -405,6 +442,18 @@ public class HtmlConverter {
             this.start = start;
             this.end = end;
             this.path = path;
+        }
+    }
+
+    private static class LocationInfo {
+        final double lat;
+        final double lng;
+        final String name;
+
+        LocationInfo(double lat, double lng, String name) {
+            this.lat = lat;
+            this.lng = lng;
+            this.name = name;
         }
     }
 

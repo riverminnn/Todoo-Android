@@ -7,6 +7,7 @@ import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -41,6 +42,8 @@ import com.example.todooapp.data.model.Todo;
 import com.example.todooapp.utils.AudioClickSpan;
 import com.example.todooapp.utils.AudioSpan;
 import com.example.todooapp.utils.HtmlConverter;
+import com.example.todooapp.utils.LocationClickSpan;
+import com.example.todooapp.utils.LocationSpan;
 import com.example.todooapp.utils.MediaHelper;
 import com.example.todooapp.utils.ReminderHelper;
 import com.example.todooapp.utils.ReminderManager;
@@ -48,6 +51,8 @@ import com.example.todooapp.utils.TextFormattingManager;
 import com.example.todooapp.utils.TodooDialogBuilder;
 import com.example.todooapp.utils.UndoRedoManager;
 import com.example.todooapp.viewmodel.TodoViewModel;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -81,6 +86,8 @@ public class TodoFormFragment extends Fragment {
     private MediaPlayer mediaPlayer;
     private String recordingFilePath;
     private boolean isRecording = false;
+
+    private static final int REQUEST_LOCATION_PERMISSION = 300;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -309,8 +316,14 @@ public class TodoFormFragment extends Fragment {
         });
 
         btnLocation.setOnClickListener(v -> {
-            // Implement location functionality
-            Toast.makeText(requireContext(), "Location feature coming soon", Toast.LENGTH_SHORT).show();
+            if (ContextCompat.checkSelfPermission(requireContext(),
+                    android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                        REQUEST_LOCATION_PERMISSION);
+                return;
+            }
+
+            getCurrentLocationAndInsert();
         });
 
         btnAddCheckbox.setOnClickListener(v -> {
@@ -861,6 +874,9 @@ public class TodoFormFragment extends Fragment {
         if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION &&
                 grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             showRecordingDialog();
+        }else if (requestCode == REQUEST_LOCATION_PERMISSION &&
+                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            getCurrentLocationAndInsert();
         } else {
             Toast.makeText(requireContext(), "Recording permission is required",
                     Toast.LENGTH_SHORT).show();
@@ -900,5 +916,72 @@ public class TodoFormFragment extends Fragment {
         }
 
         Toast.makeText(requireContext(), "Audio recording added", Toast.LENGTH_SHORT).show();
+    }
+
+    private void getCurrentLocationAndInsert() {
+        FusedLocationProviderClient fusedLocationClient =
+                LocationServices.getFusedLocationProviderClient(requireActivity());
+
+        try {
+            fusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(requireActivity(), location -> {
+                        if (location != null) {
+                            insertLocationIntoContent(location);
+                        } else {
+                            Toast.makeText(requireContext(),
+                                    "Unable to get current location",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(requireContext(),
+                                "Error getting location: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    });
+        } catch (SecurityException e) {
+            Toast.makeText(requireContext(),
+                    "Location permission denied",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void insertLocationIntoContent(Location location) {
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
+
+        // Get a readable location name (can be customized)
+        String locationName = "My Location";
+
+        // Save state for undo
+        undoRedoManager.saveFormatState();
+
+        // Insert location reference at current position
+        Editable editable = etContent.getText();
+        int pos = Math.max(0, etContent.getSelectionStart());
+
+        // Make sure there's a newline before if needed
+        if (pos > 0 && editable.charAt(pos-1) != '\n') {
+            editable.insert(pos++, "\n");
+        }
+
+        // Insert location placeholder and spans
+        String placeholder = "📍 Location: " + locationName;
+        editable.insert(pos, placeholder);
+
+        LocationSpan locationSpan = new LocationSpan(requireContext(), latitude, longitude, locationName);
+        LocationClickSpan clickSpan = new LocationClickSpan(locationSpan);
+
+        editable.setSpan(locationSpan, pos, pos + placeholder.length(),
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        editable.setSpan(clickSpan, pos, pos + placeholder.length(),
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // Add newline after if needed
+        if (pos + placeholder.length() < editable.length() &&
+                editable.charAt(pos + placeholder.length()) != '\n') {
+            editable.insert(pos + placeholder.length(), "\n");
+        }
+
+        Toast.makeText(requireContext(), "Location added", Toast.LENGTH_SHORT).show();
     }
 }
