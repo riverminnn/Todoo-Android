@@ -2,23 +2,14 @@ package com.example.todooapp.fragments;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.Location;
-import android.media.MediaPlayer;
-import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.TextWatcher;
-import android.text.style.BackgroundColorSpan;
-import android.text.style.StyleSpan;
-import android.text.style.UnderlineSpan;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -32,37 +23,27 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
-import com.example.todooapp.utils.AudioClickSpan;
-import com.example.todooapp.utils.AudioSpan;
-import com.example.todooapp.utils.HtmlConverter;
-import com.example.todooapp.utils.LocationClickSpan;
-import com.example.todooapp.utils.LocationSpan;
-import com.example.todooapp.utils.MediaHelper;
-import com.example.todooapp.utils.ReminderHelper;
-import com.example.todooapp.utils.ReminderManager;
-import com.example.todooapp.utils.TextFormattingManager;
-import com.example.todooapp.utils.TodooDialogBuilder;
-import com.example.todooapp.utils.UndoRedoManager;
+import com.example.todooapp.utils.todoForm.HtmlConverter;
+import com.example.todooapp.utils.todoForm.location.LocationHelper;
+import com.example.todooapp.utils.todoForm.MediaHelper;
+import com.example.todooapp.utils.todoForm.audio.RecordingHelper;
+import com.example.todooapp.utils.todoForm.reminder.ReminderManager;
+import com.example.todooapp.utils.todoForm.content.TextFormattingManager;
+import com.example.todooapp.utils.todoForm.theme.ThemeHelper;
+import com.example.todooapp.utils.shared.TodooDialogBuilder;
+import com.example.todooapp.utils.todoForm.content.UndoRedoManager;
 import com.example.todooapp.viewmodel.TodoViewModel;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
-import java.util.Stack;
 
 public class TodoFormFragment extends Fragment {
     private EditText etTitle, etContent;
@@ -70,8 +51,6 @@ public class TodoFormFragment extends Fragment {
     private String todoId = null;
     private TextView tvDate, tvCount;
     private LinearLayout bottomActionBar;
-    private LinearLayout defaultOptionsContainer;
-    private LinearLayout textOptionsContainer;
     private TextView btnToggleTextOptions;
     private TextFormattingManager textFormattingManager;
     private UndoRedoManager undoRedoManager;
@@ -81,13 +60,9 @@ public class TodoFormFragment extends Fragment {
 
     private TextWatcher contentWatcher;
 
-    private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
-    private MediaRecorder mediaRecorder;
-    private MediaPlayer mediaPlayer;
-    private String recordingFilePath;
-    private boolean isRecording = false;
-
-    private static final int REQUEST_LOCATION_PERMISSION = 300;
+    private RecordingHelper recordingHelper;
+    private ThemeHelper themeHelper;
+    private LocationHelper locationHelper;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -126,6 +101,8 @@ public class TodoFormFragment extends Fragment {
         undoRedoManager = new UndoRedoManager(etContent);
         todoViewModel = new ViewModelProvider(requireActivity()).get(TodoViewModel.class);
         reminderManager = new ReminderManager(requireContext(), getViewLifecycleOwner(), todoViewModel);
+        themeHelper = new ThemeHelper(this, todoViewModel);
+        recordingHelper = new RecordingHelper(this, undoRedoManager, etContent);
 
         // Get references to buttons that need to be shown/hidden
         TextView btnShare = view.findViewById(R.id.btnShare);
@@ -138,9 +115,10 @@ public class TodoFormFragment extends Fragment {
 
         // Get reference to the bottom action bar and its components
         bottomActionBar = view.findViewById(R.id.bottomActionBar);
-        defaultOptionsContainer = view.findViewById(R.id.defaultOptionsContainer);
-        textOptionsContainer = view.findViewById(R.id.textOptionsContainer);
+        LinearLayout defaultOptionsContainer = view.findViewById(R.id.defaultOptionsContainer);
+        LinearLayout textOptionsContainer = view.findViewById(R.id.textOptionsContainer);
         btnToggleTextOptions = view.findViewById(R.id.btnToggleTextOptions);
+        locationHelper = new LocationHelper(this, undoRedoManager, etContent);
 
         // Initially hide the editing buttons
         btnRedo.setVisibility(View.GONE);
@@ -240,14 +218,13 @@ public class TodoFormFragment extends Fragment {
         });
 
         btnShare.setOnClickListener(v -> {
-            // Implement record functionality
-            Toast.makeText(requireContext(), "Share feature coming soon", Toast.LENGTH_SHORT).show();
+            shareAsText();
         });
 
         btnBackground.setOnClickListener(v -> {
-            // Implement record functionality
-            Toast.makeText(requireContext(), "Background feature coming soon", Toast.LENGTH_SHORT).show();
+            themeHelper.showBackgroundOptions(todoId);
         });
+
 
         // In initializeViews() method
         contentWatcher = new TextWatcher() {
@@ -290,59 +267,25 @@ public class TodoFormFragment extends Fragment {
         btnStrikeThrough.setOnClickListener(v -> applyFormatting("strikethrough"));
         btnH1.setOnClickListener(v -> applyFormatting("heading"));
 
-
-        // Set up other action buttons
         TextView btnAddRecord = view.findViewById(R.id.btnAddRecord);
         TextView btnAddImage = view.findViewById(R.id.btnAddImage);
         TextView btnLocation = view.findViewById(R.id.btnLocation);
         TextView btnAddCheckbox = view.findViewById(R.id.btnAddCheckbox);
 
         btnAddRecord.setOnClickListener(v -> {
-            // Check if we have recording permission
-            if (ContextCompat.checkSelfPermission(requireContext(),
-                    android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO},
-                        REQUEST_RECORD_AUDIO_PERMISSION);
-                return;
-            }
-
-            // Show recording dialog
-            showRecordingDialog();
+            recordingHelper.checkPermissionAndRecord();
         });
 
-        // Add in initializeViews method where btnAddImage is set up
         btnAddImage.setOnClickListener(v -> {
             selectImage();
         });
 
         btnLocation.setOnClickListener(v -> {
-            if (ContextCompat.checkSelfPermission(requireContext(),
-                    android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                        REQUEST_LOCATION_PERMISSION);
-                return;
-            }
-
-            getCurrentLocationAndInsert();
+            locationHelper.checkPermissionAndGetLocation();
         });
 
         btnAddCheckbox.setOnClickListener(v -> {
-            Editable editable = etContent.getText();
-            int start = etContent.getSelectionStart();
-            int end = etContent.getSelectionEnd();
-
-            // Save state for undo before applying any checkbox
-            undoRedoManager.saveFormatState();
-
-            // Apply checkbox to the selected range (or current line if no selection)
-            if (start == end) {
-                // No selection: apply to the current line
-                int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), start);
-                textFormattingManager.toggleCheckbox(editable, lineExtents[0], lineExtents[1]);
-            } else {
-                // Selection: apply to all lines in the range
-                textFormattingManager.toggleCheckbox(editable, start, end);
-            }
+            addCheckbox();
         });
     }
 
@@ -524,7 +467,6 @@ public class TodoFormFragment extends Fragment {
         menuBackgroundOverlay.setOnClickListener(v -> menuBackgroundOverlay.setVisibility(View.GONE));
     }
 
-    // Modify loadTodoIfEditing to display the creation date and initial character count
     private void loadTodoIfEditing() {
         if (getArguments() != null && getArguments().getString("todoId") != null) {
             todoId = getArguments().getString("todoId");
@@ -550,6 +492,10 @@ public class TodoFormFragment extends Fragment {
                         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
                         String formattedDate = dateFormat.format(new Date(todo.getCreationDate()));
                         tvDate.setText("Created: " + formattedDate);
+
+                        // Load and apply theme using ThemeHelper
+                        themeHelper.setCurrentTheme(todo.getThemeIndex());
+                        themeHelper.applyCurrentTheme();
                     }
                 });
             } catch (NumberFormatException e) {
@@ -707,6 +653,61 @@ public class TodoFormFragment extends Fragment {
         super.onDestroyView();
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == RecordingHelper.REQUEST_RECORD_AUDIO_PERMISSION &&
+                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            recordingHelper.showRecordingDialog();
+        } else if (requestCode == LocationHelper.REQUEST_LOCATION_PERMISSION &&
+                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            locationHelper.getCurrentLocationAndInsert();
+        } else if (requestCode == RecordingHelper.REQUEST_RECORD_AUDIO_PERMISSION) {
+            Toast.makeText(requireContext(), "Recording permission is required",
+                    Toast.LENGTH_SHORT).show();
+        } else if (requestCode == LocationHelper.REQUEST_LOCATION_PERMISSION) {
+            Toast.makeText(requireContext(), "Location permission is required",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void shareAsText() {
+        String title = etTitle.getText().toString().trim();
+        String content = android.text.Html.fromHtml(
+                HtmlConverter.toHtml(requireContext(), etContent.getText()),
+                android.text.Html.FROM_HTML_MODE_COMPACT).toString();
+
+        String shareText = title.isEmpty() ? content : title + "\n\n" + content;
+
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+        sendIntent.setType("text/plain");
+
+        Intent shareIntent = Intent.createChooser(sendIntent, "Share Note");
+        startActivity(shareIntent);
+    }
+
+    private void addCheckbox() {
+        Editable editable = etContent.getText();
+        int start = etContent.getSelectionStart();
+        int end = etContent.getSelectionEnd();
+
+        // Save state for undo before applying any checkbox
+        undoRedoManager.saveFormatState();
+
+        // Apply checkbox to the selected range (or current line if no selection)
+        if (start == end) {
+            // No selection: apply to the current line
+            int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), start);
+            textFormattingManager.toggleCheckbox(editable, lineExtents[0], lineExtents[1]);
+        } else {
+            // Selection: apply to all lines in the range
+            textFormattingManager.toggleCheckbox(editable, start, end);
+        }
+    }
+
     // Replace showReminderDialog method with a call to the manager
     private void showReminderDialog() {
         reminderManager.showReminderDialog(todoId, newTodo -> {
@@ -740,248 +741,5 @@ public class TodoFormFragment extends Fragment {
                 f.set(editText, R.drawable.custom_cursor);
             } catch (Exception ignored) { }
         }
-    }
-
-    private void showRecordingDialog() {
-        // Create dialog with custom view
-        TodooDialogBuilder builder = new TodooDialogBuilder(requireContext());
-        View recordingView = getLayoutInflater().inflate(R.layout.dialog_recording, null);
-        builder.setView(recordingView)
-                .setTitle("Record Audio");
-
-        // Get view references
-        TextView tvRecordingStatus = recordingView.findViewById(R.id.tvRecordingStatus);
-        TextView btnRecord = recordingView.findViewById(R.id.btnRecord);
-        TextView btnPlay = recordingView.findViewById(R.id.btnPlay);
-        TextView btnSave = recordingView.findViewById(R.id.btnSave);
-
-        // Setup recording file path
-        recordingFilePath = MediaHelper.getNewAudioFilePath(requireContext());
-
-        // Create dialog
-        final androidx.appcompat.app.AlertDialog dialog = builder.create();
-
-        // Setup record button
-        btnRecord.setOnClickListener(v -> {
-            if (!isRecording) {
-                startRecording();
-                tvRecordingStatus.setText("Recording...");
-                btnRecord.setText("Stop");
-                btnPlay.setEnabled(false);
-                btnSave.setEnabled(false);
-            } else {
-                stopRecording();
-                tvRecordingStatus.setText("Recording complete");
-                btnRecord.setText("Record");
-                btnPlay.setEnabled(true);
-                btnSave.setEnabled(true);
-            }
-            isRecording = !isRecording;
-        });
-
-        // Setup play button
-        btnPlay.setEnabled(false);
-        btnPlay.setOnClickListener(v -> {
-            if (mediaPlayer == null || !mediaPlayer.isPlaying()) {
-                playRecording();
-                tvRecordingStatus.setText("Playing...");
-            } else {
-                stopPlayback();
-                tvRecordingStatus.setText("Playback stopped");
-            }
-        });
-
-        // Setup save button
-        btnSave.setEnabled(false);
-        btnSave.setOnClickListener(v -> {
-            insertAudioIntoContent();
-            dialog.dismiss();
-        });
-
-        // Clean up on dismiss
-        dialog.setOnDismissListener(d -> {
-            cleanupMediaResources();
-        });
-
-        dialog.show();
-    }
-
-    private void startRecording() {
-        mediaRecorder = new MediaRecorder();
-        try {
-            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-            mediaRecorder.setOutputFile(recordingFilePath);
-            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-            mediaRecorder.prepare();
-            mediaRecorder.start();
-        } catch (IOException e) {
-            Toast.makeText(requireContext(), "Failed to start recording", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void stopRecording() {
-        if (mediaRecorder != null) {
-            try {
-                mediaRecorder.stop();
-            } catch (RuntimeException e) {
-                // Handle the case when recording is too short
-            }
-            mediaRecorder.release();
-            mediaRecorder = null;
-        }
-    }
-
-    private void playRecording() {
-        mediaPlayer = new MediaPlayer();
-        try {
-            mediaPlayer.setDataSource(recordingFilePath);
-            mediaPlayer.prepare();
-            mediaPlayer.start();
-            mediaPlayer.setOnCompletionListener(mp -> {
-                stopPlayback();
-            });
-        } catch (IOException e) {
-            Toast.makeText(requireContext(), "Failed to play recording", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void stopPlayback() {
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            mediaPlayer.stop();
-            mediaPlayer.reset();
-        }
-    }
-
-    private void cleanupMediaResources() {
-        if (mediaRecorder != null) {
-            mediaRecorder.release();
-            mediaRecorder = null;
-        }
-
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-
-        isRecording = false;
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION &&
-                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            showRecordingDialog();
-        }else if (requestCode == REQUEST_LOCATION_PERMISSION &&
-                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            getCurrentLocationAndInsert();
-        } else {
-            Toast.makeText(requireContext(), "Recording permission is required",
-                    Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void insertAudioIntoContent() {
-        // Get relative path and save state for undo
-        String relativePath = MediaHelper.getRelativeAudioPath(requireContext(), recordingFilePath);
-        undoRedoManager.saveFormatState();
-
-        // Insert audio reference at current position
-        Editable editable = etContent.getText();
-        int pos = Math.max(0, etContent.getSelectionStart());
-
-        // Make sure there's a newline before if needed
-        if (pos > 0 && editable.charAt(pos-1) != '\n') {
-            editable.insert(pos++, "\n");
-        }
-
-        // Insert audio placeholder and spans
-        String placeholder = "🔊 Audio Recording";
-        editable.insert(pos, placeholder);
-
-        AudioSpan audioSpan = new AudioSpan(requireContext(), relativePath);
-        AudioClickSpan clickSpan = new AudioClickSpan(audioSpan);
-
-        editable.setSpan(audioSpan, pos, pos + placeholder.length(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        editable.setSpan(clickSpan, pos, pos + placeholder.length(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        // Add newline after if needed
-        if (pos + placeholder.length() < editable.length() &&
-                editable.charAt(pos + placeholder.length()) != '\n') {
-            editable.insert(pos + placeholder.length(), "\n");
-        }
-
-        Toast.makeText(requireContext(), "Audio recording added", Toast.LENGTH_SHORT).show();
-    }
-
-    private void getCurrentLocationAndInsert() {
-        FusedLocationProviderClient fusedLocationClient =
-                LocationServices.getFusedLocationProviderClient(requireActivity());
-
-        try {
-            fusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(requireActivity(), location -> {
-                        if (location != null) {
-                            insertLocationIntoContent(location);
-                        } else {
-                            Toast.makeText(requireContext(),
-                                    "Unable to get current location",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(requireContext(),
-                                "Error getting location: " + e.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                    });
-        } catch (SecurityException e) {
-            Toast.makeText(requireContext(),
-                    "Location permission denied",
-                    Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void insertLocationIntoContent(Location location) {
-        double latitude = location.getLatitude();
-        double longitude = location.getLongitude();
-
-        // Get a readable location name (can be customized)
-        String locationName = "My Location";
-
-        // Save state for undo
-        undoRedoManager.saveFormatState();
-
-        // Insert location reference at current position
-        Editable editable = etContent.getText();
-        int pos = Math.max(0, etContent.getSelectionStart());
-
-        // Make sure there's a newline before if needed
-        if (pos > 0 && editable.charAt(pos-1) != '\n') {
-            editable.insert(pos++, "\n");
-        }
-
-        // Insert location placeholder and spans
-        String placeholder = "📍 Location: " + locationName;
-        editable.insert(pos, placeholder);
-
-        LocationSpan locationSpan = new LocationSpan(requireContext(), latitude, longitude, locationName);
-        LocationClickSpan clickSpan = new LocationClickSpan(locationSpan);
-
-        editable.setSpan(locationSpan, pos, pos + placeholder.length(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        editable.setSpan(clickSpan, pos, pos + placeholder.length(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        // Add newline after if needed
-        if (pos + placeholder.length() < editable.length() &&
-                editable.charAt(pos + placeholder.length()) != '\n') {
-            editable.insert(pos + placeholder.length(), "\n");
-        }
-
-        Toast.makeText(requireContext(), "Location added", Toast.LENGTH_SHORT).show();
     }
 }

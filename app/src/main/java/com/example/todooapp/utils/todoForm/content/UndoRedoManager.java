@@ -1,8 +1,7 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm.content;
 
 import android.text.Editable;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.widget.EditText;
 
 import java.util.ArrayList;

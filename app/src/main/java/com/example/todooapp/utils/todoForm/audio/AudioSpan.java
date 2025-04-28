@@ -1,4 +1,4 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm.audio;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -12,8 +12,6 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
-
-import com.example.todooapp.R;
 
 import java.io.File;
 import java.io.IOException;

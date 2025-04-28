@@ -17,7 +17,7 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import android.Manifest;
 
-import com.example.todooapp.utils.ReminderHelper;
+import com.example.todooapp.utils.todoForm.reminder.ReminderHelper;
 
 public class MainActivity extends AppCompatActivity {
     private NavController navController;

@@ -20,7 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.todooapp.R;
 import com.example.todooapp.adapter.CategoryAdapter;
 import com.example.todooapp.data.model.Todo;
-import com.example.todooapp.utils.TodooDialogBuilder;
+import com.example.todooapp.utils.shared.TodooDialogBuilder;
 import com.example.todooapp.viewmodel.TodoViewModel;
 
 import java.util.ArrayList;

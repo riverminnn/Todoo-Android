@@ -15,14 +15,17 @@ public class Todo {
 
     private long creationDate;
 
-    // For media attachments
-    private String imageUri;        // Local path to stored image
-    private String audioRecordingUri;  // Local path to audio file
-    private double locationLat;     // Latitude coordinate
-    private double locationLng;     // Longitude coordinate
-    private String locationAddress; // Optional human-readable address
-
     private String firebaseKey;
+
+    private int themeIndex = 0;
+
+    public int getThemeIndex() {
+        return themeIndex;
+    }
+
+    public void setThemeIndex(int themeIndex) {
+        this.themeIndex = themeIndex;
+    }
 
     public String getFirebaseKey() {
         return firebaseKey;
@@ -151,47 +154,4 @@ public class Todo {
     }
 
     private boolean isCompleted;
-
-    // Constructors, getters, and setters
-
-
-    public String getImageUri() {
-        return imageUri;
-    }
-
-    public void setImageUri(String imageUri) {
-        this.imageUri = imageUri;
-    }
-
-    public String getAudioRecordingUri() {
-        return audioRecordingUri;
-    }
-
-    public void setAudioRecordingUri(String audioRecordingUri) {
-        this.audioRecordingUri = audioRecordingUri;
-    }
-
-    public double getLocationLat() {
-        return locationLat;
-    }
-
-    public void setLocationLat(double locationLat) {
-        this.locationLat = locationLat;
-    }
-
-    public double getLocationLng() {
-        return locationLng;
-    }
-
-    public void setLocationLng(double locationLng) {
-        this.locationLng = locationLng;
-    }
-
-    public String getLocationAddress() {
-        return locationAddress;
-    }
-
-    public void setLocationAddress(String locationAddress) {
-        this.locationAddress = locationAddress;
-    }
 }

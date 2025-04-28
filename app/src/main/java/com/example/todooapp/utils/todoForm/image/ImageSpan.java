@@ -1,4 +1,4 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm.image;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -15,7 +15,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 

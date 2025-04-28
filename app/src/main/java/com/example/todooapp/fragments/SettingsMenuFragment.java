@@ -13,10 +13,10 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.example.todooapp.R;
-import com.example.todooapp.utils.SettingsManager;
-import com.example.todooapp.utils.TodoSortOption;
-import com.example.todooapp.utils.TodooDialogBuilder;
-import com.example.todooapp.utils.UserManager;
+import com.example.todooapp.utils.settings.SettingsManager;
+import com.example.todooapp.utils.settings.TodoSortOption;
+import com.example.todooapp.utils.shared.TodooDialogBuilder;
+import com.example.todooapp.utils.shared.UserManager;
 import com.example.todooapp.viewmodel.TodoViewModel;
 
 public class SettingsMenuFragment extends Fragment {

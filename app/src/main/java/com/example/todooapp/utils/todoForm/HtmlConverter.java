@@ -1,4 +1,4 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm;
 
 import android.content.Context;
 import android.graphics.Typeface;
@@ -6,11 +6,9 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.BackgroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
-import android.text.style.UnderlineSpan;
 import android.util.Log;
 
 import androidx.core.content.ContextCompat;
@@ -18,6 +16,13 @@ import androidx.core.content.res.ResourcesCompat;
 import androidx.core.text.HtmlCompat;
 
 import com.example.todooapp.R;
+import com.example.todooapp.utils.todoForm.audio.AudioClickSpan;
+import com.example.todooapp.utils.todoForm.audio.AudioSpan;
+import com.example.todooapp.utils.todoForm.checkbox.CheckboxClickSpan;
+import com.example.todooapp.utils.todoForm.checkbox.CheckboxSpan;
+import com.example.todooapp.utils.todoForm.content.TextFormattingManager;
+import com.example.todooapp.utils.todoForm.image.ImageSpan;
+import com.example.todooapp.utils.todoForm.location.LocationSpan;
 
 import java.util.ArrayList;
 import java.util.Comparator;

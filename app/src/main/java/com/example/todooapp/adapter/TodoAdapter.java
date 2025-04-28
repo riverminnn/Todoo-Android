@@ -1,6 +1,5 @@
 package com.example.todooapp.adapter;
 
-import android.content.Context;
 import android.graphics.Color;
 import android.text.Spanned;
 import android.view.LayoutInflater;
@@ -15,7 +14,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
-import com.example.todooapp.utils.HtmlConverter;
 import com.google.android.material.card.MaterialCardView;
 
 import java.text.SimpleDateFormat;

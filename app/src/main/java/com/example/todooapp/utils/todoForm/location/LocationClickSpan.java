@@ -1,4 +1,4 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm.location;
 
 import android.text.style.ClickableSpan;
 import android.view.View;

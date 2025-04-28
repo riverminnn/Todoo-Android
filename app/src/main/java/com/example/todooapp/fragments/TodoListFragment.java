@@ -1,6 +1,5 @@
 package com.example.todooapp.fragments;
 
-import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -23,8 +22,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.todooapp.R;
 import com.example.todooapp.adapter.TodoAdapter;
 import com.example.todooapp.data.model.Todo;
-import com.example.todooapp.utils.TodooDialogBuilder;
-import com.example.todooapp.utils.UserManager;
+import com.example.todooapp.utils.shared.TodooDialogBuilder;
 import com.example.todooapp.viewmodel.TodoViewModel;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;

@@ -1,8 +1,6 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.util.Log;
 

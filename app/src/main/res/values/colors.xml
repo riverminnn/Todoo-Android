@@ -7,4 +7,30 @@
     <color name="gray_200">#EEEEEE</color>
     <color name="dark_gray">#2d2d2d</color>
     <color name="yellow">#ffba2e</color>
+    <!-- Add these theme colors -->
+    <!-- Dark theme -->
+    <color name="dark_background">#121212</color>
+
+    <!-- Sepia theme -->
+    <color name="sepia_background">#F5E8D3</color>
+    <color name="sepia_text">#5F4B32</color>
+    <color name="sepia_hint">#9E8A75</color>
+    <color name="sepia_accent">#A67C52</color>
+
+    <!-- Blue theme -->
+    <color name="blue_background">#E6F2FF</color>
+    <color name="blue_text">#0D47A1</color>
+    <color name="blue_hint">#7FB2F0</color>
+    <color name="blue_accent">#1976D2</color>
+
+    <!-- Pink theme -->
+    <color name="pink_background">#FFF0F5</color>
+    <color name="pink_text">#D81B60</color>
+    <color name="pink_hint">#F48FB1</color>
+    <color name="pink_accent">#EC407A</color>
+
+    <!-- Common colors -->
+    <color name="gray_300">#E0E0E0</color>
+    <color name="gray_600">#757575</color>
+    <color name="primary_light">#BB86FC</color>
 </resources>

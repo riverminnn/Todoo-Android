@@ -1,4 +1,4 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm.reminder;
 
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
@@ -18,9 +18,7 @@ import com.example.todooapp.MainActivity;
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 
 public class ReminderHelper {
     private static final String CHANNEL_ID = "todo_reminder_channel";

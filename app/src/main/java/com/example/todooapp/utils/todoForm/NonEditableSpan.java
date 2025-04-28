@@ -1,4 +1,4 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
