@@ -390,4 +390,31 @@ public class TextFormattingManager {
 
         return !spanRemoved;
     }
+
+    // Add to TextFormattingManager class
+
+    public void insertImage(Editable editable, int position, String imagePath) {
+        if (position < 0 || position > editable.length()) {
+            position = editable.length();
+        }
+
+        // Ensure there's a newline before the image if not at beginning
+        if (position > 0 && editable.charAt(position - 1) != '\n') {
+            editable.insert(position, "\n");
+            position++;
+        }
+
+        // Insert placeholder character for the image
+        editable.insert(position, "\uFFFC"); // Object replacement character
+
+        // Get display width - use 80% of screen width
+        int maxWidth = (int)(context.getResources().getDisplayMetrics().widthPixels * 0.8);
+
+        // Apply image span
+        ImageSpan imageSpan = new ImageSpan(context, imagePath, maxWidth);
+        editable.setSpan(imageSpan, position, position + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // Ensure there's a newline after the image
+        editable.insert(position + 1, "\n");
+    }
 }

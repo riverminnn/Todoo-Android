@@ -9,7 +9,7 @@ import androidx.room.RoomDatabase;
 import com.example.todooapp.data.dao.TodoDao;
 import com.example.todooapp.data.model.Todo;
 
-@Database(entities = {Todo.class}, version = 9)
+@Database(entities = {Todo.class}, version = 10, exportSchema = false)
 public abstract class TodoDatabase extends RoomDatabase {
     private static TodoDatabase instance;
 

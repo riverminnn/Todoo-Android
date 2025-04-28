@@ -1,9 +1,15 @@
 package com.example.todooapp.fragments;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.Spannable;
@@ -32,7 +38,10 @@ import androidx.navigation.Navigation;
 
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
+import com.example.todooapp.utils.AudioClickSpan;
+import com.example.todooapp.utils.AudioSpan;
 import com.example.todooapp.utils.HtmlConverter;
+import com.example.todooapp.utils.MediaHelper;
 import com.example.todooapp.utils.ReminderHelper;
 import com.example.todooapp.utils.ReminderManager;
 import com.example.todooapp.utils.TextFormattingManager;
@@ -40,6 +49,7 @@ import com.example.todooapp.utils.TodooDialogBuilder;
 import com.example.todooapp.utils.UndoRedoManager;
 import com.example.todooapp.viewmodel.TodoViewModel;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -60,10 +70,17 @@ public class TodoFormFragment extends Fragment {
     private TextView btnToggleTextOptions;
     private TextFormattingManager textFormattingManager;
     private UndoRedoManager undoRedoManager;
+    private static final int REQUEST_IMAGE_PICK = 100;
 
     private ReminderManager reminderManager;
 
     private TextWatcher contentWatcher;
+
+    private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
+    private MediaRecorder mediaRecorder;
+    private MediaPlayer mediaPlayer;
+    private String recordingFilePath;
+    private boolean isRecording = false;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -215,6 +232,16 @@ public class TodoFormFragment extends Fragment {
             view.findViewById(R.id.appBarLayout).requestFocus();
         });
 
+        btnShare.setOnClickListener(v -> {
+            // Implement record functionality
+            Toast.makeText(requireContext(), "Share feature coming soon", Toast.LENGTH_SHORT).show();
+        });
+
+        btnBackground.setOnClickListener(v -> {
+            // Implement record functionality
+            Toast.makeText(requireContext(), "Background feature coming soon", Toast.LENGTH_SHORT).show();
+        });
+
         // In initializeViews() method
         contentWatcher = new TextWatcher() {
             private String beforeChange;
@@ -264,13 +291,21 @@ public class TodoFormFragment extends Fragment {
         TextView btnAddCheckbox = view.findViewById(R.id.btnAddCheckbox);
 
         btnAddRecord.setOnClickListener(v -> {
-            // Implement record functionality
-            Toast.makeText(requireContext(), "Record feature coming soon", Toast.LENGTH_SHORT).show();
+            // Check if we have recording permission
+            if (ContextCompat.checkSelfPermission(requireContext(),
+                    android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO},
+                        REQUEST_RECORD_AUDIO_PERMISSION);
+                return;
+            }
+
+            // Show recording dialog
+            showRecordingDialog();
         });
 
+        // Add in initializeViews method where btnAddImage is set up
         btnAddImage.setOnClickListener(v -> {
-            // Implement add image functionality
-            Toast.makeText(requireContext(), "Add image feature coming soon", Toast.LENGTH_SHORT).show();
+            selectImage();
         });
 
         btnLocation.setOnClickListener(v -> {
@@ -296,6 +331,38 @@ public class TodoFormFragment extends Fragment {
                 textFormattingManager.toggleCheckbox(editable, start, end);
             }
         });
+    }
+
+    private void selectImage() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        startActivityForResult(Intent.createChooser(intent, "Select Image"), REQUEST_IMAGE_PICK);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == REQUEST_IMAGE_PICK && resultCode == Activity.RESULT_OK && data != null) {
+            Uri selectedImageUri = data.getData();
+            if (selectedImageUri != null) {
+                // Save image to local storage
+                String localImagePath = MediaHelper.saveImageToLocal(requireContext(), selectedImageUri);
+
+                if (localImagePath != null) {
+                    // Get current cursor position
+                    int cursorPosition = etContent.getSelectionStart();
+
+                    // Save state for undo
+                    undoRedoManager.saveFormatState();
+
+                    // Insert image at cursor position
+                    textFormattingManager.insertImage(etContent.getText(), cursorPosition, localImagePath);
+                } else {
+                    Toast.makeText(requireContext(), "Failed to save image", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
     }
 
     private void applyFormatting(String formatType) {
@@ -660,5 +727,178 @@ public class TodoFormFragment extends Fragment {
                 f.set(editText, R.drawable.custom_cursor);
             } catch (Exception ignored) { }
         }
+    }
+
+    private void showRecordingDialog() {
+        // Create dialog with custom view
+        TodooDialogBuilder builder = new TodooDialogBuilder(requireContext());
+        View recordingView = getLayoutInflater().inflate(R.layout.dialog_recording, null);
+        builder.setView(recordingView)
+                .setTitle("Record Audio");
+
+        // Get view references
+        TextView tvRecordingStatus = recordingView.findViewById(R.id.tvRecordingStatus);
+        TextView btnRecord = recordingView.findViewById(R.id.btnRecord);
+        TextView btnPlay = recordingView.findViewById(R.id.btnPlay);
+        TextView btnSave = recordingView.findViewById(R.id.btnSave);
+
+        // Setup recording file path
+        recordingFilePath = MediaHelper.getNewAudioFilePath(requireContext());
+
+        // Create dialog
+        final androidx.appcompat.app.AlertDialog dialog = builder.create();
+
+        // Setup record button
+        btnRecord.setOnClickListener(v -> {
+            if (!isRecording) {
+                startRecording();
+                tvRecordingStatus.setText("Recording...");
+                btnRecord.setText("Stop");
+                btnPlay.setEnabled(false);
+                btnSave.setEnabled(false);
+            } else {
+                stopRecording();
+                tvRecordingStatus.setText("Recording complete");
+                btnRecord.setText("Record");
+                btnPlay.setEnabled(true);
+                btnSave.setEnabled(true);
+            }
+            isRecording = !isRecording;
+        });
+
+        // Setup play button
+        btnPlay.setEnabled(false);
+        btnPlay.setOnClickListener(v -> {
+            if (mediaPlayer == null || !mediaPlayer.isPlaying()) {
+                playRecording();
+                tvRecordingStatus.setText("Playing...");
+            } else {
+                stopPlayback();
+                tvRecordingStatus.setText("Playback stopped");
+            }
+        });
+
+        // Setup save button
+        btnSave.setEnabled(false);
+        btnSave.setOnClickListener(v -> {
+            insertAudioIntoContent();
+            dialog.dismiss();
+        });
+
+        // Clean up on dismiss
+        dialog.setOnDismissListener(d -> {
+            cleanupMediaResources();
+        });
+
+        dialog.show();
+    }
+
+    private void startRecording() {
+        mediaRecorder = new MediaRecorder();
+        try {
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+            mediaRecorder.setOutputFile(recordingFilePath);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+        } catch (IOException e) {
+            Toast.makeText(requireContext(), "Failed to start recording", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void stopRecording() {
+        if (mediaRecorder != null) {
+            try {
+                mediaRecorder.stop();
+            } catch (RuntimeException e) {
+                // Handle the case when recording is too short
+            }
+            mediaRecorder.release();
+            mediaRecorder = null;
+        }
+    }
+
+    private void playRecording() {
+        mediaPlayer = new MediaPlayer();
+        try {
+            mediaPlayer.setDataSource(recordingFilePath);
+            mediaPlayer.prepare();
+            mediaPlayer.start();
+            mediaPlayer.setOnCompletionListener(mp -> {
+                stopPlayback();
+            });
+        } catch (IOException e) {
+            Toast.makeText(requireContext(), "Failed to play recording", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void stopPlayback() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+            mediaPlayer.reset();
+        }
+    }
+
+    private void cleanupMediaResources() {
+        if (mediaRecorder != null) {
+            mediaRecorder.release();
+            mediaRecorder = null;
+        }
+
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+
+        isRecording = false;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION &&
+                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            showRecordingDialog();
+        } else {
+            Toast.makeText(requireContext(), "Recording permission is required",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void insertAudioIntoContent() {
+        // Get relative path and save state for undo
+        String relativePath = MediaHelper.getRelativeAudioPath(requireContext(), recordingFilePath);
+        undoRedoManager.saveFormatState();
+
+        // Insert audio reference at current position
+        Editable editable = etContent.getText();
+        int pos = Math.max(0, etContent.getSelectionStart());
+
+        // Make sure there's a newline before if needed
+        if (pos > 0 && editable.charAt(pos-1) != '\n') {
+            editable.insert(pos++, "\n");
+        }
+
+        // Insert audio placeholder and spans
+        String placeholder = "🔊 Audio Recording";
+        editable.insert(pos, placeholder);
+
+        AudioSpan audioSpan = new AudioSpan(requireContext(), relativePath);
+        AudioClickSpan clickSpan = new AudioClickSpan(audioSpan);
+
+        editable.setSpan(audioSpan, pos, pos + placeholder.length(),
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        editable.setSpan(clickSpan, pos, pos + placeholder.length(),
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // Add newline after if needed
+        if (pos + placeholder.length() < editable.length() &&
+                editable.charAt(pos + placeholder.length()) != '\n') {
+            editable.insert(pos + placeholder.length(), "\n");
+        }
+
+        Toast.makeText(requireContext(), "Audio recording added", Toast.LENGTH_SHORT).show();
     }
 }
