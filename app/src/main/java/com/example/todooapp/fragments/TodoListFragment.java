@@ -48,7 +48,7 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
     private TodoViewModel todoViewModel;
     private List<Todo> todoList = new ArrayList<>();
     private TodoAdapter adapter;
-    private String currentCategory = null; // null means "All"
+    private String currentCategory; // null means "All"
 
     private SettingsManager settingsManager;
 
@@ -272,7 +272,12 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
     private void setupCategoryFilter() {
         categoryChipGroup.removeAllViews();
         Chip allChip = createCategoryChip("All");
-        allChip.setChecked(true);
+
+        // Check saved category selection in ViewModel
+        String savedCategory = todoViewModel.getCurrentCategory();
+        boolean isAllSelected = savedCategory == null;
+
+        allChip.setChecked(isAllSelected);
         categoryChipGroup.addView(allChip);
 
         todoViewModel.getAllUniqueCategories().observe(getViewLifecycleOwner(), categories -> {
@@ -285,6 +290,15 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
             for (String category : categories) {
                 if (category != null && !category.isEmpty()) {
                     Chip chip = createCategoryChip(category);
+
+                    // Check if this is the previously selected category
+                    if (category.equals(savedCategory)) {
+                        chip.setChecked(true);
+                        // Make sure we load the correct data for this category
+                        currentCategory = category;
+                        filterTodosByCategory(category);
+                    }
+
                     categoryChipGroup.addView(chip);
                 }
             }
@@ -342,9 +356,11 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         chip.setOnClickListener(v -> {
             if ("All".equals(category)) {
                 currentCategory = null;
+                todoViewModel.setCurrentCategory(null); // Save to ViewModel
                 loadAllTodos();
             } else {
                 currentCategory = category;
+                todoViewModel.setCurrentCategory(category); // Save to ViewModel
                 filterTodosByCategory(category);
             }
         });
