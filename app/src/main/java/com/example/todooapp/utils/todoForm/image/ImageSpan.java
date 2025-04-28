@@ -98,12 +98,18 @@ public class ImageSpan extends ReplacementSpan {
         try {
             if (imagePath == null) return null;
 
+            // Check if it's a full path or a relative path
             File imageFile = new File(imagePath);
+            if (!imageFile.exists()) {
+                // Try resolving as a relative path in app's internal storage
+                imageFile = new File(context.getFilesDir(), imagePath);
+            }
+
             if (imageFile.exists()) {
-                // Load from local file
+                // Get bitmap dimensions without loading full image
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inJustDecodeBounds = true;
-                BitmapFactory.decodeFile(imagePath, options);
+                BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
 
                 // Calculate inSampleSize for memory-efficient loading
                 int inSampleSize = 1;
@@ -113,14 +119,31 @@ public class ImageSpan extends ReplacementSpan {
 
                 options.inJustDecodeBounds = false;
                 options.inSampleSize = inSampleSize;
-                return BitmapFactory.decodeFile(imagePath, options);
+                return BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
             } else if (imagePath.startsWith("content:")) {
                 // Load from content URI
                 Uri uri = Uri.parse(imagePath);
                 try (InputStream is = context.getContentResolver().openInputStream(uri)) {
-                    if (is != null) {
-                        return BitmapFactory.decodeStream(is);
+                    if (is == null) return null;
+
+                    // Get bitmap dimensions
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inJustDecodeBounds = true;
+                    BitmapFactory.decodeStream(is, null, options);
+
+                    // Reset stream
+                    is.close();
+                    InputStream is2 = context.getContentResolver().openInputStream(uri);
+
+                    // Calculate inSampleSize
+                    int inSampleSize = 1;
+                    while (options.outWidth / inSampleSize > maxWidth * 2) {
+                        inSampleSize *= 2;
                     }
+
+                    options.inJustDecodeBounds = false;
+                    options.inSampleSize = inSampleSize;
+                    return BitmapFactory.decodeStream(is2, null, options);
                 }
             }
         } catch (IOException e) {
