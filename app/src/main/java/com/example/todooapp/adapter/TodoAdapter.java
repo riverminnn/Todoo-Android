@@ -32,6 +32,11 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
     private boolean selectionMode = false;
     private boolean trashMode = false;
     private final Set<Todo> selectedTodos = new HashSet<>();
+    public static final int LAYOUT_LIST = 0;
+    public static final int LAYOUT_GRID = 1;
+
+    private int currentLayout = LAYOUT_LIST;
+
 
     public interface OnTodoClickListener {
         void onTodoClick(Todo todo);
@@ -75,20 +80,124 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
     @NonNull
     @Override
     public TodoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_todo, parent, false);
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        View view;
+
+        if (viewType == LAYOUT_GRID) {
+            view = inflater.inflate(R.layout.item_todo_grid, parent, false);
+        } else {
+            view = inflater.inflate(R.layout.item_todo, parent, false);
+        }
+
         return new TodoViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull TodoViewHolder holder, int position) {
         Todo todo = todoList.get(position);
-        bindTodoContent(holder, todo);
 
+        // Determine if we're in grid or list layout
+        boolean isGridLayout = currentLayout == LAYOUT_GRID;
+
+        // Bind title with appropriate constraints
+        String title = todo.getTitle()
+                .replaceAll("<.*?>", " ")
+                .replaceAll("\\s{2,}", " ")
+                .trim();
+
+        // For grid layout, allow two lines for title
+        if (isGridLayout) {
+            holder.tvTitle.setSingleLine(false);
+            holder.tvTitle.setMaxLines(2);
+
+            // Allow longer title in grid view
+            if (title.length() > 100) {
+                title = title.substring(0, 100) + "...";
+            }
+        } else {
+            // For list layout, keep single line with shorter text
+            holder.tvTitle.setSingleLine(true);
+            if (title.length() > 50) {
+                title = title.substring(0, 50) + "...";
+            }
+        }
+
+        holder.tvTitle.setText(title);
+
+        // Bind content with appropriate constraints
+        String htmlContent = todo.getContent();
+        if (htmlContent != null && !htmlContent.trim().isEmpty()) {
+            String contentText = extractContentFromHtml(htmlContent);
+
+            // Configure content text view based on layout
+            if (isGridLayout) {
+                holder.tvContent.setSingleLine(false);
+                holder.tvContent.setMaxLines(4);
+                // Allow more content in grid view
+                if (contentText.length() > 300) {
+                    contentText = contentText.substring(0, 300) + "...";
+                }
+            } else {
+                holder.tvContent.setSingleLine(true);
+                if (contentText.length() > 150) {
+                    contentText = contentText.substring(0, 150) + "...";
+                }
+            }
+
+            holder.tvContent.setText(contentText);
+        } else {
+            holder.tvContent.setText("No text");
+        }
+
+        // Handle pin icon
+        TextView tvPinIcon = holder.tvPinIcon;
+        tvPinIcon.setVisibility(todo.isPinned() ? View.VISIBLE : View.GONE);
+
+        // Apply appropriate binding based on mode
         if (trashMode) {
             bindTrashMode(holder, todo);
         } else {
             bindNormalMode(holder, todo);
         }
+    }
+
+    // Helper method to extract content from HTML
+    private String extractContentFromHtml(String htmlContent) {
+        // Split the content into "lines" based on HTML tags
+        String[] lines = htmlContent.split("(?=<todoo-(bullet|checkbox|heading))");
+        String firstLine = "";
+
+        // Extract the first line by taking the content within the first tag (or plain text)
+        if (lines.length > 0) {
+            String firstSegment = lines[0].trim();
+            // Match the content within the first tag
+            Pattern contentPattern = Pattern.compile("<todoo-(bullet|checkbox|heading)(?:\\s+[^>]*)?>(.*?)</todoo-\\1>", Pattern.DOTALL);
+            Matcher matcher = contentPattern.matcher(firstSegment);
+            if (matcher.find()) {
+                String contentWithHtml = matcher.group(2).trim();
+                Spanned spannedContent = HtmlCompat.fromHtml(contentWithHtml, HtmlCompat.FROM_HTML_MODE_LEGACY);
+                firstLine = spannedContent.toString().trim();
+            } else {
+                firstLine = firstSegment
+                        .replaceAll("<.*?>", " ")
+                        .replaceAll("\\s{2,}", " ")
+                        .trim();
+            }
+        }
+
+        return firstLine;
+    }
+
+    public void setLayoutType(int layoutType) {
+        if (this.currentLayout != layoutType) {
+            this.currentLayout = layoutType;
+            notifyDataSetChanged();
+        }
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return currentLayout;
     }
 
     private void bindTodoContent(TodoViewHolder holder, Todo todo) {

@@ -25,6 +25,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.todooapp.R;
 import com.example.todooapp.adapter.TodoAdapter;
 import com.example.todooapp.data.model.Todo;
+import com.example.todooapp.utils.settings.SettingsManager;
 import com.example.todooapp.utils.shared.TodooDialogBuilder;
 import com.example.todooapp.viewmodel.TodoViewModel;
 import com.google.android.material.chip.Chip;
@@ -47,7 +48,9 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
     private TodoViewModel todoViewModel;
     private List<Todo> todoList = new ArrayList<>();
     private TodoAdapter adapter;
-    private String currentCategory = null; // null means "All"
+    private String currentCategory; // null means "All"
+
+    private SettingsManager settingsManager;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -91,12 +94,32 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         btnCategoryManager = view.findViewById(R.id.btnCategoryManager);
         categoryChipGroup = view.findViewById(R.id.categoryChipGroup);
         bottomActionBar = view.findViewById(R.id.bottomActionBar);
+
+        // Initialize settings manager
+        settingsManager = new SettingsManager(requireContext());
     }
 
     private void setupRecyclerView() {
         adapter = new TodoAdapter(todoList, this);
         recyclerView.setAdapter(adapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+
+        // Apply the layout based on user settings
+        applyLayoutSettings();
+    }
+
+    private void applyLayoutSettings() {
+        String layoutType = settingsManager.getLayoutType();
+        if ("Grid view".equals(layoutType)) {
+            // Use GridLayoutManager with 2 columns for grid view
+            int spanCount = 2;
+            recyclerView.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(
+                    requireContext(), spanCount));
+            adapter.setLayoutType(TodoAdapter.LAYOUT_GRID);
+        } else {
+            // Use LinearLayoutManager for list view (default)
+            recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+            adapter.setLayoutType(TodoAdapter.LAYOUT_LIST);
+        }
     }
 
     private void setupSearchView() {
@@ -249,7 +272,12 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
     private void setupCategoryFilter() {
         categoryChipGroup.removeAllViews();
         Chip allChip = createCategoryChip("All");
-        allChip.setChecked(true);
+
+        // Check saved category selection in ViewModel
+        String savedCategory = todoViewModel.getCurrentCategory();
+        boolean isAllSelected = savedCategory == null;
+
+        allChip.setChecked(isAllSelected);
         categoryChipGroup.addView(allChip);
 
         todoViewModel.getAllUniqueCategories().observe(getViewLifecycleOwner(), categories -> {
@@ -262,6 +290,15 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
             for (String category : categories) {
                 if (category != null && !category.isEmpty()) {
                     Chip chip = createCategoryChip(category);
+
+                    // Check if this is the previously selected category
+                    if (category.equals(savedCategory)) {
+                        chip.setChecked(true);
+                        // Make sure we load the correct data for this category
+                        currentCategory = category;
+                        filterTodosByCategory(category);
+                    }
+
                     categoryChipGroup.addView(chip);
                 }
             }
@@ -319,9 +356,11 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         chip.setOnClickListener(v -> {
             if ("All".equals(category)) {
                 currentCategory = null;
+                todoViewModel.setCurrentCategory(null); // Save to ViewModel
                 loadAllTodos();
             } else {
                 currentCategory = category;
+                todoViewModel.setCurrentCategory(category); // Save to ViewModel
                 filterTodosByCategory(category);
             }
         });
@@ -451,6 +490,9 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
     @Override
     public void onResume() {
         super.onResume();
+
+        // Apply layout settings in case they changed while fragment was paused
+        applyLayoutSettings();
 
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
                 new androidx.activity.OnBackPressedCallback(true) {

@@ -33,6 +33,32 @@ public class TodoViewModel extends AndroidViewModel {
     private MutableLiveData<TodoSortOption> currentSortOption = new MutableLiveData<>(TodoSortOption.MODIFIED_DESC);
     private MediatorLiveData<List<Todo>> sortedTodos = new MediatorLiveData<>();
 
+
+    // In TodoViewModel.java
+    private String currentCategory = null; // null means "All"
+
+    public String getCurrentCategory() {
+        // Initialize from SharedPreferences if null
+        if (currentCategory == null) {
+            SharedPreferences prefs = getApplication().getSharedPreferences("todo_prefs", Context.MODE_PRIVATE);
+            currentCategory = prefs.getString("current_category", null);
+        }
+        return currentCategory;
+    }
+
+    public void setCurrentCategory(String category) {
+        this.currentCategory = category;
+        // Persist to SharedPreferences
+        SharedPreferences prefs = getApplication().getSharedPreferences("todo_prefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        if (category == null) {
+            editor.remove("current_category");
+        } else {
+            editor.putString("current_category", category);
+        }
+        editor.apply();
+    }
+
     public TodoViewModel(@NonNull Application application) {
         super(application);
         repository = new TodoRepository(application);
