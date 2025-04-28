@@ -30,6 +30,7 @@ import androidx.navigation.Navigation;
 
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
+import com.example.todooapp.utils.settings.SettingsManager;
 import com.example.todooapp.utils.todoForm.HtmlConverter;
 import com.example.todooapp.utils.todoForm.location.LocationHelper;
 import com.example.todooapp.utils.todoForm.MediaHelper;
@@ -64,6 +65,9 @@ public class TodoFormFragment extends Fragment {
     private RecordingHelper recordingHelper;
     private ThemeHelper themeHelper;
     private LocationHelper locationHelper;
+
+    // Make sure this is in your class fields
+    private SettingsManager settingsManager;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -288,6 +292,36 @@ public class TodoFormFragment extends Fragment {
         btnAddCheckbox.setOnClickListener(v -> {
             addCheckbox();
         });
+
+        // In initializeViews method, after initializing managers
+        settingsManager = new SettingsManager(requireContext());
+        applyFontSize();
+    }
+
+    // Add this new method to apply font sizes
+    private void applyFontSize() {
+        String fontSize = settingsManager.getFontSize();
+        float titleSize;
+        float contentSize;
+
+        switch (fontSize) {
+            case "Small":
+                titleSize = 20f;
+                contentSize = 14f;
+                break;
+            case "Large":
+                titleSize = 28f;
+                contentSize = 18f;
+                break;
+            case "Medium":
+            default:
+                titleSize = 24f;
+                contentSize = 16f;
+                break;
+        }
+
+        etTitle.setTextSize(titleSize);
+        etContent.setTextSize(contentSize);
     }
 
     private void selectImage() {
@@ -624,6 +658,7 @@ public class TodoFormFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        applyFontSize();
 
         // Remove any existing callbacks first to avoid duplicates
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
