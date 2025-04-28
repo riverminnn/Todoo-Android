@@ -11,6 +11,7 @@ import androidx.lifecycle.MediatorLiveData;
 import com.example.todooapp.data.TodoDatabase;
 import com.example.todooapp.data.dao.TodoDao;
 import com.example.todooapp.data.model.Todo;
+import com.example.todooapp.utils.shared.UserManager;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -30,13 +31,27 @@ public class TodoRepository {
     private SharedPreferences sharedPreferences;
     private static final String PREF_CATEGORIES = "categories";
 
+    // In TodoRepository constructor
     public TodoRepository(Context context) {
         TodoDatabase database = TodoDatabase.getInstance(context);
         todoDao = database.todoDao();
         allTodos = todoDao.getAllTodos();
-        firebaseRef = FirebaseDatabase.getInstance().getReference("todos");
+
         executorService = Executors.newSingleThreadExecutor();
         sharedPreferences = context.getSharedPreferences("todo_prefs", Context.MODE_PRIVATE);
+
+        // Get current user ID from UserManager
+        UserManager userManager = new UserManager(context);
+        String userId = userManager.getUserId();
+
+        // Only initialize Firebase with user ID if we have one
+        if (userId != null && !userId.isEmpty()) {
+            // Structure data by user ID
+            firebaseRef = FirebaseDatabase.getInstance().getReference("todos").child(userId);
+        } else {
+            // Create a temporary reference that will be updated when user logs in
+            firebaseRef = FirebaseDatabase.getInstance().getReference("temp");
+        }
     }
 
     public LiveData<List<Todo>> getAllTodos() {
@@ -121,7 +136,8 @@ public class TodoRepository {
     }
 
     public LiveData<List<String>> getAllUniqueCategories() {
-        // Create a MediatorLiveData to combine Room categories with SharedPreferences categories
+        // Create a MediatorLiveData to combine Room categories with SharedPreferences
+        // categories
         MediatorLiveData<List<String>> result = new MediatorLiveData<>();
 
         // Add Room database source
