@@ -1,7 +1,18 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.TodooApp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- System bars -->
+        <item name="android:statusBarColor">@color/status_bar_color_dark</item>
+        <item name="android:navigationBarColor">@color/navigation_bar_color_dark</item>
+
+        <!-- Theme colors -->
+        <item name="backgroundColor">#121212</item>
+        <item name="textColorPrimary">#FFFFFF</item>
+        <item name="textColorSecondary">#B3FFFFFF</item>
+        <item name="cardBackgroundColor">#1F1F1F</item>
+        <item name="searchBarBackground">#1f1f1f</item>
+        <item name="dividerColor">#333333</item>
+
+        <!-- Accent colors -->
+        <item name="colorControlActivated">@color/yellow</item>
     </style>
 </resources>

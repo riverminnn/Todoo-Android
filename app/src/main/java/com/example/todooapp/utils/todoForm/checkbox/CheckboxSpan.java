@@ -1,17 +1,14 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm.checkbox;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.text.Editable;
 import android.text.Layout;
-import android.text.Spannable;
-import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.style.LeadingMarginSpan;
-import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
-import com.example.todooapp.R;
+
+import com.example.todooapp.utils.todoForm.content.TextFormattingManager;
 
 public class CheckboxSpan implements LeadingMarginSpan {
     private boolean isChecked;

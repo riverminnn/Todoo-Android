@@ -4,10 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="?attr/backgroundColor"
     tools:context=".fragments.TodoFormFragment">
 
-    <!-- Add this right after the ConstraintLayout opening tag -->
+    <!-- Background overlay -->
     <View
         android:id="@+id/menuBackgroundOverlay"
         android:layout_width="match_parent"
@@ -19,7 +19,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
@@ -31,7 +31,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/white">
+            android:background="?attr/backgroundColor">
 
             <TextView
                 android:id="@+id/btnBack"
@@ -42,7 +42,7 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:padding="12dp"
                 android:text="&#xf060;"
-                android:textColor="@color/dark_gray"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="24sp" />
 
             <TextView
@@ -55,7 +55,7 @@
                 android:contentDescription="More options"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf142;"
-                android:textColor="@color/dark_gray"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="24sp" />
 
             <TextView
@@ -68,7 +68,7 @@
                 android:contentDescription="Background"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf553;"
-                android:textColor="@color/dark_gray"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="24sp" />
 
             <TextView
@@ -81,7 +81,7 @@
                 android:contentDescription="Share"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf08e;"
-                android:textColor="@color/dark_gray"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="24sp" />
 
             <TextView
@@ -94,7 +94,7 @@
                 android:contentDescription="Redo"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf00c;"
-                android:textColor="@color/dark_gray"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="24sp"
                 android:visibility="gone" />
 
@@ -108,7 +108,7 @@
                 android:contentDescription="Redo"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf2f9;"
-                android:textColor="@color/dark_gray"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="24sp"
                 android:visibility="gone" />
 
@@ -122,7 +122,7 @@
                 android:contentDescription="Redo"
                 android:fontFamily="@font/fa_free_solid_400"
                 android:text="&#xf2ea;"
-                android:textColor="@color/dark_gray"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="24sp"
                 android:visibility="gone" />
 
@@ -139,6 +139,8 @@
         android:fontFamily="@font/google_sans"
         android:hint="Title"
         android:inputType="text"
+        android:textColor="?attr/textColorPrimary"
+        android:textColorHint="?attr/textColorSecondary"
         android:textSize="24sp"
         android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@+id/appBarLayout" />
@@ -156,7 +158,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/google_sans"
-            android:textColor="#9E9E9E"
+            android:textColor="?attr/textColorSecondary"
             android:textSize="12sp"
             tools:text="Created: Jan 1, 2023" />
 
@@ -165,7 +167,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/google_sans"
             android:text="  |  "
-            android:textColor="#9E9E9E"
+            android:textColor="?attr/textColorSecondary"
             android:textSize="12sp" />
 
         <TextView
@@ -173,7 +175,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/google_sans"
-            android:textColor="#9E9E9E"
+            android:textColor="?attr/textColorSecondary"
             android:textSize="12sp"
             tools:text="69 characters" />
 
@@ -205,7 +207,9 @@
             android:paddingTop="6dp"
             android:scrollbarStyle="insideOverlay"
             android:scrollbars="vertical"
-            android:textCursorDrawable="@color/white"
+            android:textColor="?attr/textColorPrimary"
+            android:textColorHint="?attr/textColorSecondary"
+            android:textCursorDrawable="@null"
             android:textSize="16sp" />
 
     </androidx.core.widget.NestedScrollView>
@@ -214,7 +218,7 @@
         android:id="@+id/bottomActionBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_layout_border_top_gray_200"
+        android:background="?attr/backgroundColor"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
@@ -249,7 +253,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\uf130"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp" />
 
                 <TextView
@@ -262,7 +266,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\uf03e"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp" />
 
                 <TextView
@@ -275,7 +279,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\uf3c5"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp" />
 
                 <TextView
@@ -288,7 +292,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\uf14a"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp" />
             </LinearLayout>
         </HorizontalScrollView>
@@ -317,7 +321,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\u0042"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp"
                     android:textStyle="bold" />
 
@@ -331,7 +335,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\uf591"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp" />
 
                 <TextView
@@ -344,7 +348,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\uf033"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp" />
 
                 <TextView
@@ -357,7 +361,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\uf0cd"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp" />
 
                 <TextView
@@ -370,7 +374,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\uf0cc"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp" />
 
                 <TextView
@@ -383,7 +387,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\uf0ca"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp" />
 
                 <TextView
@@ -396,7 +400,7 @@
                     android:fontFamily="@font/fa_free_solid_400"
                     android:padding="12dp"
                     android:text="\uf1dc"
-                    android:textColor="@color/dark_gray"
+                    android:textColor="?attr/textColorPrimary"
                     android:textSize="24sp" />
             </LinearLayout>
         </HorizontalScrollView>
@@ -410,7 +414,7 @@
             android:fontFamily="@font/fa_free_solid_400"
             android:padding="12dp"
             android:text="\u0054"
-            android:textColor="@color/dark_gray"
+            android:textColor="?attr/textColorPrimary"
             android:textSize="24sp" />
 
     </LinearLayout>

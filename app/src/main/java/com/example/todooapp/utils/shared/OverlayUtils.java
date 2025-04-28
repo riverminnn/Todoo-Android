@@ -1,4 +1,4 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.shared;
 
 import android.content.Context;
 import android.graphics.Color;

@@ -13,10 +13,11 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.example.todooapp.R;
-import com.example.todooapp.utils.SettingsManager;
-import com.example.todooapp.utils.TodoSortOption;
-import com.example.todooapp.utils.TodooDialogBuilder;
-import com.example.todooapp.utils.UserManager;
+import com.example.todooapp.utils.settings.SettingsManager;
+import com.example.todooapp.utils.settings.ThemeOption;
+import com.example.todooapp.utils.settings.TodoSortOption;
+import com.example.todooapp.utils.shared.TodooDialogBuilder;
+import com.example.todooapp.utils.shared.UserManager;
 import com.example.todooapp.viewmodel.TodoViewModel;
 
 public class SettingsMenuFragment extends Fragment {
@@ -29,6 +30,10 @@ public class SettingsMenuFragment extends Fragment {
     private SettingsManager settingsManager;
     private UserManager userManager;
     private TodoViewModel todoViewModel;
+
+    // Add to class fields
+    private View themeOption;
+    private TextView themeValue;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -63,6 +68,11 @@ public class SettingsMenuFragment extends Fragment {
         layoutOption.setOnClickListener(v -> showLayoutDialog());
         btnSignOut.setOnClickListener(v -> handleSignOut());
 
+        // In onViewCreated method, add:
+        themeOption = view.findViewById(R.id.themeOption);
+        themeValue = view.findViewById(R.id.themeValue);
+        themeOption.setOnClickListener(v -> showThemeDialog());
+
         // Load saved settings
         loadSettings();
 
@@ -74,6 +84,46 @@ public class SettingsMenuFragment extends Fragment {
         fontSizeValue.setText(settingsManager.getFontSize());
         layoutValue.setText(settingsManager.getLayoutType());
         sortValue.setText(settingsManager.getSortOption().getDisplayName());
+
+        // Add this line to load theme
+        themeValue.setText(settingsManager.getThemeOption().getDisplayName());
+    }
+
+    // Add this method:
+    private void showThemeDialog() {
+        // Theme options
+        final ThemeOption[] options = ThemeOption.values();
+        String[] displayNames = new String[options.length];
+
+        // Get current theme
+        ThemeOption currentOption = settingsManager.getThemeOption();
+        int selectedIndex = 0;
+
+        // Prepare display names and find selected
+        for (int i = 0; i < options.length; i++) {
+            displayNames[i] = options[i].getDisplayName();
+            if (options[i] == currentOption) {
+                selectedIndex = i;
+            }
+        }
+
+        // Create dialog
+        new TodooDialogBuilder(requireContext())
+                .setTitle("Theme")
+                .setSingleChoiceItems(displayNames, selectedIndex, (dialog, which) -> {
+                    // Save selected theme
+                    settingsManager.setThemeOption(options[which]);
+
+                    // Update UI
+                    themeValue.setText(options[which].getDisplayName());
+
+                    // Apply theme
+                    settingsManager.applyTheme();
+
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void showFontSizeDialog() {

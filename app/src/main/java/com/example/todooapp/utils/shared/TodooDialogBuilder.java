@@ -1,9 +1,8 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.shared;
 
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
+import android.content.res.TypedArray;
 import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,13 +18,24 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 public class TodooDialogBuilder extends MaterialAlertDialogBuilder {
 
     private final Context context;
+    private final int backgroundColor;
+    private final int textColor;
 
     public TodooDialogBuilder(@NonNull Context context) {
         super(context);
         this.context = context;
 
-        // Apply default styling
-        setBackground(new ColorDrawable(Color.WHITE));
+        // Get colors from theme
+        TypedArray ta = context.obtainStyledAttributes(new int[] {
+                R.attr.cardBackgroundColor,
+                R.attr.textColorPrimary
+        });
+
+        this.backgroundColor = ta.getColor(0, 0);
+        this.textColor = ta.getColor(1, 0);
+        ta.recycle();
+
+        // Apply default styling with theme colors
         setBackgroundInsetStart(32);
         setBackgroundInsetEnd(32);
         setBackgroundInsetTop(20);
@@ -69,6 +79,14 @@ public class TodooDialogBuilder extends MaterialAlertDialogBuilder {
         return (TodooDialogBuilder) super.setView(view);
     }
 
+    public int getBackgroundColor() {
+        return backgroundColor;
+    }
+
+    public int getTextColor() {
+        return textColor;
+    }
+
     public TodooDialogBuilder withInputField(
             String title,
             String hint,
@@ -101,23 +119,23 @@ public class TodooDialogBuilder extends MaterialAlertDialogBuilder {
     public AlertDialog show() {
         AlertDialog dialog = super.create();
 
-        // Apply rounded corners by default
+        // Apply rounded corners with theme colors
         if (dialog.getWindow() != null) {
             GradientDrawable shape = new GradientDrawable();
             shape.setShape(GradientDrawable.RECTANGLE);
-            shape.setColor(Color.WHITE);
+            shape.setColor(backgroundColor);
             shape.setCornerRadius(12 * context.getResources().getDisplayMetrics().density); // 12dp
             dialog.getWindow().setBackgroundDrawable(shape);
         }
 
         dialog.show();
 
-        // Set button text colors to black
+        // Set button text colors using theme color
         if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.BLACK);
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(textColor);
         }
         if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.BLACK);
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(textColor);
         }
 
         return dialog;

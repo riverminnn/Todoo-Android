@@ -1,4 +1,4 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.settings;
 
 public enum TodoSortOption {
     MODIFIED_DESC("Last modified (newest first)"),

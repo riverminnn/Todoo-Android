@@ -17,6 +17,16 @@ public class Todo {
 
     private String firebaseKey;
 
+    private int themeIndex = 0;
+
+    public int getThemeIndex() {
+        return themeIndex;
+    }
+
+    public void setThemeIndex(int themeIndex) {
+        this.themeIndex = themeIndex;
+    }
+
     public String getFirebaseKey() {
         return firebaseKey;
     }
@@ -144,6 +154,4 @@ public class Todo {
     }
 
     private boolean isCompleted;
-
-    // Constructors, getters, and setters
 }

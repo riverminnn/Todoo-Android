@@ -16,9 +16,9 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.example.todooapp.data.model.Todo;
 import com.example.todooapp.data.repository.TodoRepository;
-import com.example.todooapp.utils.ReminderHelper;
-import com.example.todooapp.utils.SettingsManager;
-import com.example.todooapp.utils.TodoSortOption;
+import com.example.todooapp.utils.todoForm.reminder.ReminderHelper;
+import com.example.todooapp.utils.settings.SettingsManager;
+import com.example.todooapp.utils.settings.TodoSortOption;
 import com.example.todooapp.widget.TodoWidget;
 
 import java.util.ArrayList;

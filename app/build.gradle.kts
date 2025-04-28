@@ -72,4 +72,5 @@ dependencies {
     implementation("com.google.android.recaptcha:recaptcha:18.7.0")
 
     implementation ("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.android.gms:play-services-location:21.0.0")
 }

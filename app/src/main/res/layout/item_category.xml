@@ -8,7 +8,7 @@
     android:layout_marginVertical="6dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/white"
+    app:cardBackgroundColor="?attr/cardBackgroundColor"
     app:strokeWidth="0dp">
 
     <RelativeLayout
@@ -24,6 +24,7 @@
             android:layout_centerVertical="true"
             android:layout_toStartOf="@+id/tvTodoCount"
             android:fontFamily="@font/google_sans"
+            android:textColor="?attr/textColorPrimary"
             android:textSize="16sp"
             android:textStyle="bold"
             android:text="Category Name" />
@@ -36,7 +37,7 @@
             android:layout_centerVertical="true"
             android:fontFamily="@font/google_sans"
             android:textSize="16sp"
-            android:textColor="#757575"
+            android:textColor="?attr/textColorSecondary"
             android:text="5" />
 
         <CheckBox

@@ -1,8 +1,6 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm.checkbox;
 
 import android.text.Editable;
-import android.text.Spannable;
-import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.view.View;
 import android.widget.EditText;

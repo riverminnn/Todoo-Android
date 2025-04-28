@@ -1,17 +1,15 @@
 package com.example.todooapp.fragments;
 
 import android.annotation.SuppressLint;
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.TextWatcher;
-import android.text.style.BackgroundColorSpan;
-import android.text.style.StyleSpan;
-import android.text.style.UnderlineSpan;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -25,29 +23,28 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Todo;
-import com.example.todooapp.utils.HtmlConverter;
-import com.example.todooapp.utils.ReminderHelper;
-import com.example.todooapp.utils.ReminderManager;
-import com.example.todooapp.utils.TextFormattingManager;
-import com.example.todooapp.utils.TodooDialogBuilder;
-import com.example.todooapp.utils.UndoRedoManager;
+import com.example.todooapp.utils.todoForm.HtmlConverter;
+import com.example.todooapp.utils.todoForm.location.LocationHelper;
+import com.example.todooapp.utils.todoForm.MediaHelper;
+import com.example.todooapp.utils.todoForm.audio.RecordingHelper;
+import com.example.todooapp.utils.todoForm.reminder.ReminderManager;
+import com.example.todooapp.utils.todoForm.content.TextFormattingManager;
+import com.example.todooapp.utils.todoForm.theme.ThemeHelper;
+import com.example.todooapp.utils.shared.TodooDialogBuilder;
+import com.example.todooapp.utils.todoForm.content.UndoRedoManager;
 import com.example.todooapp.viewmodel.TodoViewModel;
 
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
-import java.util.Stack;
 
 public class TodoFormFragment extends Fragment {
     private EditText etTitle, etContent;
@@ -55,15 +52,18 @@ public class TodoFormFragment extends Fragment {
     private String todoId = null;
     private TextView tvDate, tvCount;
     private LinearLayout bottomActionBar;
-    private LinearLayout defaultOptionsContainer;
-    private LinearLayout textOptionsContainer;
     private TextView btnToggleTextOptions;
     private TextFormattingManager textFormattingManager;
     private UndoRedoManager undoRedoManager;
+    private static final int REQUEST_IMAGE_PICK = 100;
 
     private ReminderManager reminderManager;
 
     private TextWatcher contentWatcher;
+
+    private RecordingHelper recordingHelper;
+    private ThemeHelper themeHelper;
+    private LocationHelper locationHelper;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -102,6 +102,8 @@ public class TodoFormFragment extends Fragment {
         undoRedoManager = new UndoRedoManager(etContent);
         todoViewModel = new ViewModelProvider(requireActivity()).get(TodoViewModel.class);
         reminderManager = new ReminderManager(requireContext(), getViewLifecycleOwner(), todoViewModel);
+        themeHelper = new ThemeHelper(this, todoViewModel);
+        recordingHelper = new RecordingHelper(this, undoRedoManager, etContent);
 
         // Get references to buttons that need to be shown/hidden
         TextView btnShare = view.findViewById(R.id.btnShare);
@@ -114,9 +116,10 @@ public class TodoFormFragment extends Fragment {
 
         // Get reference to the bottom action bar and its components
         bottomActionBar = view.findViewById(R.id.bottomActionBar);
-        defaultOptionsContainer = view.findViewById(R.id.defaultOptionsContainer);
-        textOptionsContainer = view.findViewById(R.id.textOptionsContainer);
+        LinearLayout defaultOptionsContainer = view.findViewById(R.id.defaultOptionsContainer);
+        LinearLayout textOptionsContainer = view.findViewById(R.id.textOptionsContainer);
         btnToggleTextOptions = view.findViewById(R.id.btnToggleTextOptions);
+        locationHelper = new LocationHelper(this, undoRedoManager, etContent);
 
         // Initially hide the editing buttons
         btnRedo.setVisibility(View.GONE);
@@ -215,6 +218,15 @@ public class TodoFormFragment extends Fragment {
             view.findViewById(R.id.appBarLayout).requestFocus();
         });
 
+        btnShare.setOnClickListener(v -> {
+            shareAsText();
+        });
+
+        btnBackground.setOnClickListener(v -> {
+            themeHelper.showBackgroundOptions(todoId);
+        });
+
+
         // In initializeViews() method
         contentWatcher = new TextWatcher() {
             private String beforeChange;
@@ -256,46 +268,58 @@ public class TodoFormFragment extends Fragment {
         btnStrikeThrough.setOnClickListener(v -> applyFormatting("strikethrough"));
         btnH1.setOnClickListener(v -> applyFormatting("heading"));
 
-
-        // Set up other action buttons
         TextView btnAddRecord = view.findViewById(R.id.btnAddRecord);
         TextView btnAddImage = view.findViewById(R.id.btnAddImage);
         TextView btnLocation = view.findViewById(R.id.btnLocation);
         TextView btnAddCheckbox = view.findViewById(R.id.btnAddCheckbox);
 
         btnAddRecord.setOnClickListener(v -> {
-            // Implement record functionality
-            Toast.makeText(requireContext(), "Record feature coming soon", Toast.LENGTH_SHORT).show();
+            recordingHelper.checkPermissionAndRecord();
         });
 
         btnAddImage.setOnClickListener(v -> {
-            // Implement add image functionality
-            Toast.makeText(requireContext(), "Add image feature coming soon", Toast.LENGTH_SHORT).show();
+            selectImage();
         });
 
         btnLocation.setOnClickListener(v -> {
-            // Implement location functionality
-            Toast.makeText(requireContext(), "Location feature coming soon", Toast.LENGTH_SHORT).show();
+            locationHelper.checkPermissionAndGetLocation();
         });
 
         btnAddCheckbox.setOnClickListener(v -> {
-            Editable editable = etContent.getText();
-            int start = etContent.getSelectionStart();
-            int end = etContent.getSelectionEnd();
-
-            // Save state for undo before applying any checkbox
-            undoRedoManager.saveFormatState();
-
-            // Apply checkbox to the selected range (or current line if no selection)
-            if (start == end) {
-                // No selection: apply to the current line
-                int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), start);
-                textFormattingManager.toggleCheckbox(editable, lineExtents[0], lineExtents[1]);
-            } else {
-                // Selection: apply to all lines in the range
-                textFormattingManager.toggleCheckbox(editable, start, end);
-            }
+            addCheckbox();
         });
+    }
+
+    private void selectImage() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        startActivityForResult(Intent.createChooser(intent, "Select Image"), REQUEST_IMAGE_PICK);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == REQUEST_IMAGE_PICK && resultCode == Activity.RESULT_OK && data != null) {
+            Uri selectedImageUri = data.getData();
+            if (selectedImageUri != null) {
+                // Save image to local storage
+                String localImagePath = MediaHelper.saveImageToLocal(requireContext(), selectedImageUri);
+
+                if (localImagePath != null) {
+                    // Get current cursor position
+                    int cursorPosition = etContent.getSelectionStart();
+
+                    // Save state for undo
+                    undoRedoManager.saveFormatState();
+
+                    // Insert image at cursor position
+                    textFormattingManager.insertImage(etContent.getText(), cursorPosition, localImagePath);
+                } else {
+                    Toast.makeText(requireContext(), "Failed to save image", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
     }
 
     private void applyFormatting(String formatType) {
@@ -386,65 +410,93 @@ public class TodoFormFragment extends Fragment {
 
         btnMenu.setOnClickListener(v -> {
             menuBackgroundOverlay.setVisibility(View.VISIBLE);
-            Context wrapper = new ContextThemeWrapper(requireContext(), R.style.CustomMenuTheme);
-            PopupMenu popupMenu = new PopupMenu(wrapper, v);
-            popupMenu.inflate(R.menu.menu_todo_options);
 
-            popupMenu.setOnDismissListener(menu -> menuBackgroundOverlay.setVisibility(View.GONE));
-            popupMenu.setOnMenuItemClickListener(item -> {
-                int itemId = item.getItemId();
-                if (itemId == R.id.action_delete) {
-                    // Show confirmation dialog instead of direct deletion
-                    new TodooDialogBuilder(requireContext())
-                            .setTitle("Delete Item")
-                            .setMessage("What would you like to do with this item?")
-                            .setPositiveButton("Move to Trash", (dialog, which) -> {
-                                long id = Long.parseLong(todoId);
-                                todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
-                                    if (currentTodo != null) {
-                                        todoViewModel.moveToTrash(currentTodo);
-                                        Toast.makeText(requireContext(), "Item moved to trash", Toast.LENGTH_SHORT).show();
-                                        Navigation.findNavController(requireView()).popBackStack();
-                                    }
-                                });
-                            })
-                            .setNegativeButton("Delete Permanently", (dialog, which) -> {
-                                deleteTodo();
-                            })
-                            .show();
-                    return true;
-                } else if (itemId == R.id.action_move_to) {
-                    showCategorySelection();
-                    return true;
-                } else if (itemId == R.id.action_hide) {
-                    long id = Long.parseLong(todoId);
-                    todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
-                        if (currentTodo != null) {
-                            todoViewModel.hideItem(currentTodo);
-                            Toast.makeText(
-                                    requireContext(),
-                                    "Item hidden. Pull down from the top to see hidden todos.",
-                                    Toast.LENGTH_LONG
-                            ).show();
-                            Navigation.findNavController(requireView()).popBackStack();
-                        }
-                    });
-                    return true;
-                } else if (itemId == R.id.action_reminder) {
-                    // Show date/time picker for reminder
-                    showReminderDialog();
-                    return true;
-                }
-                return false;
+            // Create a custom view for our menu options
+            View menuView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_menu_options, null);
+
+            // Create the TodooDialogBuilder with consistent styling
+            TodooDialogBuilder builder = new TodooDialogBuilder(requireContext());
+            builder.setTitle("Menu Options")
+                    .setView(menuView);
+
+            // Get the menu options from the view
+            TextView btnDelete = menuView.findViewById(R.id.menu_delete);
+            TextView btnMoveTo = menuView.findViewById(R.id.menu_move_to);
+            TextView btnHide = menuView.findViewById(R.id.menu_hide);
+            TextView btnReminder = menuView.findViewById(R.id.menu_reminder);
+
+            // Set text colors from dialog theme
+            int textColor = builder.getTextColor();
+            btnDelete.setTextColor(textColor);
+            btnMoveTo.setTextColor(textColor);
+            btnHide.setTextColor(textColor);
+            btnReminder.setTextColor(textColor);
+
+            // Set click listeners
+            AlertDialog dialog = builder.show();
+
+            btnDelete.setOnClickListener(item -> {
+                dialog.dismiss();
+                menuBackgroundOverlay.setVisibility(View.GONE);
+
+                // Show confirmation dialog for deletion
+                new TodooDialogBuilder(requireContext())
+                        .setTitle("Delete Item")
+                        .setMessage("What would you like to do with this item?")
+                        .setPositiveButton("Move to Trash", (dialogInterface, which) -> {
+                            long id = Long.parseLong(todoId);
+                            todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
+                                if (currentTodo != null) {
+                                    todoViewModel.moveToTrash(currentTodo);
+                                    Toast.makeText(requireContext(), "Item moved to trash", Toast.LENGTH_SHORT).show();
+                                    Navigation.findNavController(requireView()).popBackStack();
+                                }
+                            });
+                        })
+                        .setNegativeButton("Delete Permanently", (dialogInterface, which) -> {
+                            deleteTodo();
+                        })
+                        .show();
             });
 
-            popupMenu.show();
+            btnMoveTo.setOnClickListener(item -> {
+                dialog.dismiss();
+                menuBackgroundOverlay.setVisibility(View.GONE);
+                showCategorySelection();
+            });
+
+            btnHide.setOnClickListener(item -> {
+                dialog.dismiss();
+                menuBackgroundOverlay.setVisibility(View.GONE);
+
+                long id = Long.parseLong(todoId);
+                todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
+                    if (currentTodo != null) {
+                        todoViewModel.hideItem(currentTodo);
+                        Toast.makeText(
+                                requireContext(),
+                                "Item hidden. Pull down from the top to see hidden todos.",
+                                Toast.LENGTH_LONG
+                        ).show();
+                        Navigation.findNavController(requireView()).popBackStack();
+                    }
+                });
+            });
+
+            btnReminder.setOnClickListener(item -> {
+                dialog.dismiss();
+                menuBackgroundOverlay.setVisibility(View.GONE);
+                showReminderDialog();
+            });
+
+            dialog.setOnDismissListener(dialogInterface -> {
+                menuBackgroundOverlay.setVisibility(View.GONE);
+            });
         });
 
         menuBackgroundOverlay.setOnClickListener(v -> menuBackgroundOverlay.setVisibility(View.GONE));
     }
 
-    // Modify loadTodoIfEditing to display the creation date and initial character count
     private void loadTodoIfEditing() {
         if (getArguments() != null && getArguments().getString("todoId") != null) {
             todoId = getArguments().getString("todoId");
@@ -470,6 +522,10 @@ public class TodoFormFragment extends Fragment {
                         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
                         String formattedDate = dateFormat.format(new Date(todo.getCreationDate()));
                         tvDate.setText("Created: " + formattedDate);
+
+                        // Load and apply theme using ThemeHelper
+                        themeHelper.setCurrentTheme(todo.getThemeIndex());
+                        themeHelper.applyCurrentTheme();
                     }
                 });
             } catch (NumberFormatException e) {
@@ -625,6 +681,61 @@ public class TodoFormFragment extends Fragment {
             etContent.removeTextChangedListener(contentWatcher);
         }
         super.onDestroyView();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == RecordingHelper.REQUEST_RECORD_AUDIO_PERMISSION &&
+                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            recordingHelper.showRecordingDialog();
+        } else if (requestCode == LocationHelper.REQUEST_LOCATION_PERMISSION &&
+                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            locationHelper.getCurrentLocationAndInsert();
+        } else if (requestCode == RecordingHelper.REQUEST_RECORD_AUDIO_PERMISSION) {
+            Toast.makeText(requireContext(), "Recording permission is required",
+                    Toast.LENGTH_SHORT).show();
+        } else if (requestCode == LocationHelper.REQUEST_LOCATION_PERMISSION) {
+            Toast.makeText(requireContext(), "Location permission is required",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void shareAsText() {
+        String title = etTitle.getText().toString().trim();
+        String content = android.text.Html.fromHtml(
+                HtmlConverter.toHtml(requireContext(), etContent.getText()),
+                android.text.Html.FROM_HTML_MODE_COMPACT).toString();
+
+        String shareText = title.isEmpty() ? content : title + "\n\n" + content;
+
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+        sendIntent.setType("text/plain");
+
+        Intent shareIntent = Intent.createChooser(sendIntent, "Share Note");
+        startActivity(shareIntent);
+    }
+
+    private void addCheckbox() {
+        Editable editable = etContent.getText();
+        int start = etContent.getSelectionStart();
+        int end = etContent.getSelectionEnd();
+
+        // Save state for undo before applying any checkbox
+        undoRedoManager.saveFormatState();
+
+        // Apply checkbox to the selected range (or current line if no selection)
+        if (start == end) {
+            // No selection: apply to the current line
+            int[] lineExtents = textFormattingManager.getLineExtents(editable.toString(), start);
+            textFormattingManager.toggleCheckbox(editable, lineExtents[0], lineExtents[1]);
+        } else {
+            // Selection: apply to all lines in the range
+            textFormattingManager.toggleCheckbox(editable, start, end);
+        }
     }
 
     // Replace showReminderDialog method with a call to the manager

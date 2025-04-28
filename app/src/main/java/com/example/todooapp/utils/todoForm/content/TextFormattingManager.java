@@ -1,10 +1,11 @@
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.todoForm.content;
 
 import android.content.Context;
 import android.graphics.Typeface;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.style.BackgroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 
@@ -12,10 +13,14 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.example.todooapp.R;
+import com.example.todooapp.utils.todoForm.NonEditableSpan;
+import com.example.todooapp.utils.todoForm.checkbox.CheckboxClickSpan;
+import com.example.todooapp.utils.todoForm.checkbox.CheckboxSpan;
+import com.example.todooapp.utils.todoForm.image.ImageSpan;
 
 public class TextFormattingManager {
     private final Context context;
-    private Typeface fontAwesome;
+    private final Typeface fontAwesome;
 
     public TextFormattingManager(Context context) {
         this.context = context;
@@ -153,6 +158,13 @@ public class TextFormattingManager {
                             trimmedLineEnd--;
                         }
                     }
+                    // Remove any heading formatting
+                    RelativeSizeSpan[] headingSpans = editable.getSpans(lineStart, lineEnd, RelativeSizeSpan.class);
+                    for (RelativeSizeSpan span : headingSpans) {
+                        if (Math.abs(span.getSizeChange() - 1.5f) < 0.1) {
+                            editable.removeSpan(span);
+                        }
+                    }
 
                     // Remove strikethrough spans (since bullet doesn't use strikethrough)
                     android.text.style.StrikethroughSpan[] strikeSpans = editable.getSpans(
@@ -266,6 +278,13 @@ public class TextFormattingManager {
                         editable.removeSpan(bulletSpan);
                     }
 
+                    RelativeSizeSpan[] headingSpans = editable.getSpans(lineStart, lineEnd, RelativeSizeSpan.class);
+                    for (RelativeSizeSpan span : headingSpans) {
+                        if (Math.abs(span.getSizeChange() - 1.5f) < 0.1) {
+                            editable.removeSpan(span);
+                        }
+                    }
+
                     // Insert a placeholder space for the checkbox
                     editable.insert(lineStart, " ");
                     newEnd++;
@@ -290,7 +309,7 @@ public class TextFormattingManager {
         return !spanRemoved;
     }
     // Helper method to add or remove strikethrough without toggling
-    protected void toggleStrikeThrough(Editable editable, int start, int end, boolean apply) {
+    public void toggleStrikeThrough(Editable editable, int start, int end, boolean apply) {
         // Remove any existing strikethroughs first
         android.text.style.StrikethroughSpan[] strikeSpans = editable.getSpans(
                 start, end, android.text.style.StrikethroughSpan.class);
@@ -326,7 +345,19 @@ public class TextFormattingManager {
                 int lineStart = currentPosition;
                 int lineEnd = currentPosition + line.length();
 
-                // Check if this line already has heading formatting
+                // Check if this line has bullet or checkbox formatting
+                android.text.style.BulletSpan[] bulletSpans = editable.getSpans(
+                        lineStart, lineEnd, android.text.style.BulletSpan.class);
+                CheckboxSpan[] checkboxSpans = editable.getSpans(
+                        lineStart, lineEnd, CheckboxSpan.class);
+
+                // Skip formatting if line has bullet or checkbox
+                if (bulletSpans.length > 0 || checkboxSpans.length > 0) {
+                    currentPosition += line.length() + 1;
+                    continue;
+                }
+
+                // Continue with existing heading toggle logic
                 android.text.style.RelativeSizeSpan[] sizeSpans = editable.getSpans(
                         lineStart, lineEnd, android.text.style.RelativeSizeSpan.class);
 
@@ -358,9 +389,36 @@ public class TextFormattingManager {
             }
 
             // Update current position to the start of the next line
-            currentPosition += line.length() + 1; // +1 for the newline
+            currentPosition += line.length() + 1;
         }
 
         return !spanRemoved;
+    }
+
+    // Add to TextFormattingManager class
+
+    public void insertImage(Editable editable, int position, String imagePath) {
+        if (position < 0 || position > editable.length()) {
+            position = editable.length();
+        }
+
+        // Ensure there's a newline before the image if not at beginning
+        if (position > 0 && editable.charAt(position - 1) != '\n') {
+            editable.insert(position, "\n");
+            position++;
+        }
+
+        // Insert placeholder character for the image
+        editable.insert(position, "\uFFFC"); // Object replacement character
+
+        // Get display width - use 80% of screen width
+        int maxWidth = (int)(context.getResources().getDisplayMetrics().widthPixels * 0.8);
+
+        // Apply image span
+        ImageSpan imageSpan = new ImageSpan(context, imagePath, maxWidth);
+        editable.setSpan(imageSpan, position, position + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // Ensure there's a newline after the image
+        editable.insert(position + 1, "\n");
     }
 }

@@ -1,11 +1,10 @@
 // app/src/main/java/com/example/todooapp/utils/UserManager.java
-package com.example.todooapp.utils;
+package com.example.todooapp.utils.shared;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
 public class UserManager {
     private static final String PREF_NAME = "user_prefs";

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#f7f7f7">
+    android:background="?attr/backgroundColor">
 
     <!-- Toolbar Section -->
     <LinearLayout
@@ -14,8 +14,19 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="16dp"
-        android:background="#F7F7F7"
+        android:background="?attr/backgroundColor"
         app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/back_button_ripple"
+            android:fontFamily="@font/fa_free_solid_400"
+            android:padding="12dp"
+            android:text="&#xf060;"
+            android:textColor="?attr/textColorPrimary"
+            android:textSize="20sp" />
 
         <TextView
             android:id="@+id/btnCancelSelection"
@@ -26,31 +37,18 @@
             android:padding="12dp"
             android:gravity="start"
             android:text="&#xf00d;"
-            android:textColor="@android:color/black"
+            android:textColor="?attr/textColorPrimary"
             android:textSize="20sp"
-            android:visibility="gone"
-            tools:visibility="gone" />
+            android:visibility="gone" />
 
         <TextView
-            android:id="@+id/btnBack"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/back_button_ripple"
-            android:fontFamily="@font/fa_free_solid_400"
-            android:padding="12dp"
-            android:text="&#xf060;"
-            android:textColor="@android:color/black"
-            android:textSize="20sp" />
-
-        <TextView
-            android:id="@+id/title"
+            android:id="@+id/titleText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:fontFamily="@font/google_sans"
-            android:gravity="center"
             android:text="Folders"
+            android:textColor="?attr/textColorPrimary"
             android:textSize="20sp"
             android:textStyle="bold" />
 
@@ -58,15 +56,13 @@
             android:id="@+id/btnSelectAll"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
             android:background="@drawable/back_button_ripple"
             android:fontFamily="@font/fa_free_solid_400"
             android:padding="12dp"
             android:text="&#xf0ae;"
-            android:textColor="#4A4A4A"
+            android:textColor="?attr/textColorPrimary"
             android:textSize="20sp"
-            android:visibility="gone"
-            tools:visibility="gone" />
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/btnTrashCan"
@@ -76,7 +72,7 @@
             android:fontFamily="@font/fa_free_solid_400"
             android:padding="12dp"
             android:text="&#xf1f8;"
-            android:textColor="#4A4A4A"
+            android:textColor="?attr/textColorPrimary"
             android:textSize="20sp" />
     </LinearLayout>
 
@@ -102,7 +98,7 @@
         android:gravity="center"
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:background="@color/white">
+        android:background="?attr/cardBackgroundColor">
 
         <LinearLayout
             android:id="@+id/action_add_folder_container"
@@ -118,19 +114,16 @@
                 android:fontFamily="@font/fa_free_solid_400"
                 android:gravity="center"
                 android:padding="8dp"
-                android:text="&#xf067;"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:background="@drawable/circle_yellow"/>
+                android:text="&#xf07b;"
+                android:textColor="?attr/textColorPrimary"
+                android:textSize="24sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="New folder"
-                android:textSize="12sp"
-                android:textColor="#4A4A4A"
-                android:textStyle="bold"
-                android:layout_marginTop="4sp"/>
+                android:text="New Folder"
+                android:textColor="?attr/textColorPrimary"
+                android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -140,7 +133,7 @@
         android:id="@+id/bottomActionBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#F7F7F7"
+        android:background="?attr/backgroundColor"
         android:gravity="center"
         android:orientation="horizontal"
         android:padding="16dp"
@@ -164,14 +157,14 @@
                 android:gravity="center"
                 android:padding="8dp"
                 android:text="&#xf044;"
-                android:textColor="#4A4A4A"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="24sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Rename"
-                android:textColor="#4A4A4A"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -191,14 +184,14 @@
                 android:gravity="center"
                 android:padding="8dp"
                 android:text="&#xf1f8;"
-                android:textColor="#4A4A4A"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="24sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Delete"
-                android:textColor="#4A4A4A"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>
