@@ -17,6 +17,7 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import android.Manifest;
 
+import com.example.todooapp.utils.settings.SettingsManager;
 import com.example.todooapp.utils.todoForm.reminder.ReminderHelper;
 
 public class MainActivity extends AppCompatActivity {
@@ -26,13 +27,11 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        SettingsManager settingsManager = new SettingsManager(this);
+        settingsManager.applyTheme();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ReminderHelper.createNotificationChannel(this);
-
-        // Set system bar colors programmatically (alternative approach)
-        getWindow().setStatusBarColor(Color.parseColor("#f7f7f7"));
-        getWindow().setNavigationBarColor(Color.parseColor("#f7f7f7"));
 
         // Ensure dark icons on light background
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);

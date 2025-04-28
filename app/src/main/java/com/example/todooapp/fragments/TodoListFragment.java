@@ -1,7 +1,10 @@
 package com.example.todooapp.fragments;
 
+import android.annotation.SuppressLint;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -54,6 +57,15 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        // Set system bar colors programmatically (alternative approach)
+        // Get the backgroundColor from the theme
+        TypedValue typedValue = new TypedValue();
+        requireActivity().getTheme().resolveAttribute(R.attr.backgroundColor, typedValue, true);
+        int backgroundColor = typedValue.data;
+
+        // Set system bar colors through the activity
+        requireActivity().getWindow().setStatusBarColor(backgroundColor);
+        requireActivity().getWindow().setNavigationBarColor(backgroundColor);
 
         initializeViewModel();
         initializeViews(view);
@@ -262,10 +274,42 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         chip.setCheckable(true);
         chip.setClickable(true);
 
-        chip.setChipBackgroundColorResource(R.color.chip_background_color);
+        // Use theme attributes instead of static colors
+        int[] attrs = {R.attr.backgroundColor, R.attr.textColorPrimary, R.attr.cardBackgroundColor};
+        @SuppressLint("ResourceType") android.content.res.TypedArray ta = requireContext().obtainStyledAttributes(attrs);
+
+        // Create state list for chip background color
+        @SuppressLint("ResourceType") ColorStateList chipColorStateList = new ColorStateList(
+                new int[][] {
+                        new int[] {android.R.attr.state_checked},
+                        new int[] {}
+                },
+                new int[] {
+                        ta.getColor(2, 0), // colorControlActivated for selected state
+                        ta.getColor(0, 0)  // backgroundColor for default state
+                }
+        );
+
+        // Create state list for text color
+        @SuppressLint("ResourceType") ColorStateList textColorStateList = new ColorStateList(
+                new int[][] {
+                        new int[] {android.R.attr.state_checked},
+                        new int[] {}
+                },
+                new int[] {
+                        ta.getColor(1, 0), // White text for selected state
+                        ta.getColor(1, 0)  // textColorPrimary for default state
+                }
+        );
+
+        ta.recycle();
+
+        chip.setChipBackgroundColor(chipColorStateList);
+        chip.setTextColor(textColorStateList);
+
+        // Keep the rest of the styling
         chip.setChipStrokeWidth(0f);
         chip.setElevation(0f);
-        chip.setTextColor(getResources().getColorStateList(R.color.chip_text_color, null));
         chip.setChipMinHeight(108f);
         chip.setChipStartPadding(24f);
         chip.setChipEndPadding(24f);

@@ -4,14 +4,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="?attr/backgroundColor">
 
     <!-- Toolbar -->
     <LinearLayout
         android:id="@+id/toolbarLayout"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/white"
+        android:background="?attr/backgroundColor"
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -27,7 +27,7 @@
             android:fontFamily="@font/fa_free_solid_400"
             android:padding="12dp"
             android:text="&#xf060;"
-            android:textColor="@android:color/black"
+            android:textColor="?attr/textColorPrimary"
             android:textSize="20sp" />
 
         <TextView
@@ -37,7 +37,7 @@
             android:layout_marginStart="16dp"
             android:layout_weight="1"
             android:text="Hidden Items"
-            android:textColor="#000000"
+            android:textColor="?attr/textColorPrimary"
             android:textSize="20sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -65,7 +65,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="No hidden items"
-            android:textColor="#757575"
+            android:textColor="?attr/textColorSecondary"
             android:textSize="18sp" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

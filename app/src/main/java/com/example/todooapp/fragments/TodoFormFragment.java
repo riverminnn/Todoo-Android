@@ -23,6 +23,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
@@ -409,59 +410,88 @@ public class TodoFormFragment extends Fragment {
 
         btnMenu.setOnClickListener(v -> {
             menuBackgroundOverlay.setVisibility(View.VISIBLE);
-            Context wrapper = new ContextThemeWrapper(requireContext(), R.style.CustomMenuTheme);
-            PopupMenu popupMenu = new PopupMenu(wrapper, v);
-            popupMenu.inflate(R.menu.menu_todo_options);
 
-            popupMenu.setOnDismissListener(menu -> menuBackgroundOverlay.setVisibility(View.GONE));
-            popupMenu.setOnMenuItemClickListener(item -> {
-                int itemId = item.getItemId();
-                if (itemId == R.id.action_delete) {
-                    // Show confirmation dialog instead of direct deletion
-                    new TodooDialogBuilder(requireContext())
-                            .setTitle("Delete Item")
-                            .setMessage("What would you like to do with this item?")
-                            .setPositiveButton("Move to Trash", (dialog, which) -> {
-                                long id = Long.parseLong(todoId);
-                                todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
-                                    if (currentTodo != null) {
-                                        todoViewModel.moveToTrash(currentTodo);
-                                        Toast.makeText(requireContext(), "Item moved to trash", Toast.LENGTH_SHORT).show();
-                                        Navigation.findNavController(requireView()).popBackStack();
-                                    }
-                                });
-                            })
-                            .setNegativeButton("Delete Permanently", (dialog, which) -> {
-                                deleteTodo();
-                            })
-                            .show();
-                    return true;
-                } else if (itemId == R.id.action_move_to) {
-                    showCategorySelection();
-                    return true;
-                } else if (itemId == R.id.action_hide) {
-                    long id = Long.parseLong(todoId);
-                    todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
-                        if (currentTodo != null) {
-                            todoViewModel.hideItem(currentTodo);
-                            Toast.makeText(
-                                    requireContext(),
-                                    "Item hidden. Pull down from the top to see hidden todos.",
-                                    Toast.LENGTH_LONG
-                            ).show();
-                            Navigation.findNavController(requireView()).popBackStack();
-                        }
-                    });
-                    return true;
-                } else if (itemId == R.id.action_reminder) {
-                    // Show date/time picker for reminder
-                    showReminderDialog();
-                    return true;
-                }
-                return false;
+            // Create a custom view for our menu options
+            View menuView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_menu_options, null);
+
+            // Create the TodooDialogBuilder with consistent styling
+            TodooDialogBuilder builder = new TodooDialogBuilder(requireContext());
+            builder.setTitle("Menu Options")
+                    .setView(menuView);
+
+            // Get the menu options from the view
+            TextView btnDelete = menuView.findViewById(R.id.menu_delete);
+            TextView btnMoveTo = menuView.findViewById(R.id.menu_move_to);
+            TextView btnHide = menuView.findViewById(R.id.menu_hide);
+            TextView btnReminder = menuView.findViewById(R.id.menu_reminder);
+
+            // Set text colors from dialog theme
+            int textColor = builder.getTextColor();
+            btnDelete.setTextColor(textColor);
+            btnMoveTo.setTextColor(textColor);
+            btnHide.setTextColor(textColor);
+            btnReminder.setTextColor(textColor);
+
+            // Set click listeners
+            AlertDialog dialog = builder.show();
+
+            btnDelete.setOnClickListener(item -> {
+                dialog.dismiss();
+                menuBackgroundOverlay.setVisibility(View.GONE);
+
+                // Show confirmation dialog for deletion
+                new TodooDialogBuilder(requireContext())
+                        .setTitle("Delete Item")
+                        .setMessage("What would you like to do with this item?")
+                        .setPositiveButton("Move to Trash", (dialogInterface, which) -> {
+                            long id = Long.parseLong(todoId);
+                            todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
+                                if (currentTodo != null) {
+                                    todoViewModel.moveToTrash(currentTodo);
+                                    Toast.makeText(requireContext(), "Item moved to trash", Toast.LENGTH_SHORT).show();
+                                    Navigation.findNavController(requireView()).popBackStack();
+                                }
+                            });
+                        })
+                        .setNegativeButton("Delete Permanently", (dialogInterface, which) -> {
+                            deleteTodo();
+                        })
+                        .show();
             });
 
-            popupMenu.show();
+            btnMoveTo.setOnClickListener(item -> {
+                dialog.dismiss();
+                menuBackgroundOverlay.setVisibility(View.GONE);
+                showCategorySelection();
+            });
+
+            btnHide.setOnClickListener(item -> {
+                dialog.dismiss();
+                menuBackgroundOverlay.setVisibility(View.GONE);
+
+                long id = Long.parseLong(todoId);
+                todoViewModel.getTodoById(id).observe(getViewLifecycleOwner(), currentTodo -> {
+                    if (currentTodo != null) {
+                        todoViewModel.hideItem(currentTodo);
+                        Toast.makeText(
+                                requireContext(),
+                                "Item hidden. Pull down from the top to see hidden todos.",
+                                Toast.LENGTH_LONG
+                        ).show();
+                        Navigation.findNavController(requireView()).popBackStack();
+                    }
+                });
+            });
+
+            btnReminder.setOnClickListener(item -> {
+                dialog.dismiss();
+                menuBackgroundOverlay.setVisibility(View.GONE);
+                showReminderDialog();
+            });
+
+            dialog.setOnDismissListener(dialogInterface -> {
+                menuBackgroundOverlay.setVisibility(View.GONE);
+            });
         });
 
         menuBackgroundOverlay.setOnClickListener(v -> menuBackgroundOverlay.setVisibility(View.GONE));

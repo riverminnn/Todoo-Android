@@ -1,5 +1,6 @@
 package com.example.todooapp.adapter;
 
+import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.text.Spanned;
 import android.view.LayoutInflater;
@@ -229,14 +230,26 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.TodoViewHolder
         checkboxSelected.setVisibility(View.VISIBLE);
         checkboxSelected.setChecked(selectedTodos.contains(todo));
 
-        cardView.setCardBackgroundColor(selectedTodos.contains(todo) ? Color.parseColor("#F0F0F0") : Color.WHITE);
+        // Use theme attributes instead of hardcoded colors
+        int[] attrs = {android.R.attr.colorControlHighlight, R.attr.cardBackgroundColor};
+        @SuppressLint("ResourceType") android.content.res.TypedArray ta = holder.itemView.getContext().obtainStyledAttributes(attrs);
+        int highlightColor = ta.getColor(0, 0);
+        @SuppressLint("ResourceType") int normalColor = ta.getColor(1, 0);
+        ta.recycle();
+
+        // Apply selected state with theme-appropriate colors
+        cardView.setCardBackgroundColor(selectedTodos.contains(todo) ? highlightColor : normalColor);
 
         checkboxSelected.setOnClickListener(v -> toggleSelection(todo));
     }
 
     private void setupNormalMode(TodoViewHolder holder, CheckBox checkboxSelected, MaterialCardView cardView) {
+        int[] attrs = {R.attr.cardBackgroundColor};
+        @SuppressLint("ResourceType") android.content.res.TypedArray ta = holder.itemView.getContext().obtainStyledAttributes(attrs);
+        int backgroundColor = ta.getColor(0, 0);
+
         checkboxSelected.setVisibility(View.GONE);
-        cardView.setCardBackgroundColor(Color.WHITE);
+        cardView.setCardBackgroundColor(backgroundColor);
         checkboxSelected.setOnClickListener(null);
     }
 

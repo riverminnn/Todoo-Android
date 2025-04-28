@@ -70,7 +70,7 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
         btnBack = view.findViewById(R.id.btnBack);
         btnX = view.findViewById(R.id.btnCancelSelection);
         btnSelectAll = view.findViewById(R.id.btnSelectAll);
-        titleText = view.findViewById(R.id.title);
+        titleText = view.findViewById(R.id.titleText);
         actionAddFolder = view.findViewById(R.id.action_add_folder);
         bottomActionBar = view.findViewById(R.id.bottomActionBar);
         editLayout = view.findViewById(R.id.action_edit_container);

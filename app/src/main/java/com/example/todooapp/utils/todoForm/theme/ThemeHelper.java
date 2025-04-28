@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
@@ -37,26 +38,34 @@ public class ThemeHelper {
     public void showBackgroundOptions(String todoId) {
         TodooDialogBuilder builder = new TodooDialogBuilder(fragment.requireContext());
         View themePickerView = fragment.getLayoutInflater().inflate(R.layout.dialog_theme_picker, null);
-        builder.setView(themePickerView)
-                .setTitle("Choose Background");
 
-        final androidx.appcompat.app.AlertDialog dialog = builder.create();
+        // Set title and view
+        builder.setTitle("Choose Background")
+                .setView(themePickerView);
 
+        // Set up theme options
         List<ThemeManager.ThemeOption> themes = ThemeManager.getThemes();
         LinearLayout themeContainer = themePickerView.findViewById(R.id.themeContainer);
         themeContainer.removeAllViews();
 
         View[] themeViews = new View[themes.size()];
 
+        // Get theme colors to apply to elements if needed
+        int backgroundColor = builder.getBackgroundColor();
+        int textColor = builder.getTextColor();
+
+        // Apply theme attributes to the container if needed
+        themeContainer.setBackgroundColor(backgroundColor);
+
         for (int i = 0; i < themes.size(); i++) {
             ThemeManager.ThemeOption theme = themes.get(i);
-
             View themeOption = fragment.getLayoutInflater().inflate(R.layout.item_theme_option_larger, themeContainer, false);
             TextView tvThemeName = themeOption.findViewById(R.id.tvThemeName);
             View colorPreview = themeOption.findViewById(R.id.colorPreview);
             themeViews[i] = themeOption;
 
             tvThemeName.setText(theme.name);
+            tvThemeName.setTextColor(textColor); // Apply text color from theme
             colorPreview.setBackgroundColor(ContextCompat.getColor(fragment.requireContext(), theme.backgroundColor));
 
             if (i == currentTheme) {
@@ -74,21 +83,13 @@ public class ThemeHelper {
 
                 // Update current theme index
                 currentTheme = themeIndex;
-
-                // Apply theme
                 forceApplyTheme();
-
-                // Save theme
                 saveTodoWithTheme(todoId);
-
-                // Dismiss dialog after a short delay
-                v.postDelayed(dialog::dismiss, 200);
             });
 
             themeContainer.addView(themeOption);
         }
-
-        dialog.show();
+        builder.show();
     }
 
     public void forceApplyTheme() {

@@ -50,7 +50,7 @@ public class ThemeManager {
     public static List<ThemeOption> getThemes() {
         if (themes == null) {
             themes = new ArrayList<>();
-            themes.add(new ThemeOption("Default", R.color.white, R.color.black,
+            themes.add(new ThemeOption("Light", R.color.white, R.color.black,
                     R.color.gray_600, R.color.black, R.color.black));
             themes.add(new ThemeOption("Dark", R.color.dark_background, R.color.white,
                     R.color.gray_300, R.color.white, R.color.dark_background));
@@ -63,67 +63,6 @@ public class ThemeManager {
         }
         return themes;
     }
-
-    public static void applyTheme(Context context, View rootView, int themeIndex) {
-        ThemeOption theme = getThemes().get(themeIndex);
-
-        // Apply background color to root view
-        rootView.setBackgroundColor(ContextCompat.getColor(context, theme.backgroundColor));
-
-        // Find and style AppBarLayout
-        View appBarLayout = rootView.findViewById(R.id.appBarLayout);
-        if (appBarLayout != null) {
-            appBarLayout.setBackgroundColor(ContextCompat.getColor(context, theme.backgroundColor));
-
-            // Find and style the toolbar inside AppBarLayout
-            androidx.appcompat.widget.Toolbar toolbar = appBarLayout.findViewById(R.id.toolbar);
-            if (toolbar != null) {
-                toolbar.setBackgroundColor(ContextCompat.getColor(context, theme.backgroundColor));
-            }
-        }
-
-        // Find and style bottom action bar (override any drawable background)
-        View bottomActionBar = rootView.findViewById(R.id.bottomActionBar);
-        if (bottomActionBar != null) {
-            // Remove any background drawable first
-            bottomActionBar.setBackground(null);
-            bottomActionBar.setBackgroundColor(ContextCompat.getColor(context, theme.backgroundColor));
-        }
-
-        // Find all textviews and edittext elements and apply text color
-        applyThemeToTextViews(context, rootView, theme);
-    }
-
-    public static void applyThemeWithSystemBars(Activity activity, View rootView, int themeIndex) {
-        ThemeOption theme = getThemes().get(themeIndex);
-        int backgroundColor = ContextCompat.getColor(activity, theme.backgroundColor);
-
-        // Apply regular theme to views
-        applyTheme(activity, rootView, themeIndex);
-
-        // Update system bars
-        Window window = activity.getWindow();
-
-        // Set status bar color
-        window.setStatusBarColor(backgroundColor);
-
-        // Set navigation bar color
-        window.setNavigationBarColor(backgroundColor);
-
-        // Adjust status bar icon colors based on theme brightness
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            int flags = rootView.getSystemUiVisibility();
-            if (isLightColor(backgroundColor)) {
-                // Dark icons for light background
-                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-            } else {
-                // Light icons for dark background
-                flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-            }
-            window.getDecorView().setSystemUiVisibility(flags);
-        }
-    }
-
     // Helper method to determine if a color is light or dark
     private static boolean isLightColor(int color) {
         double darkness = 1 - (0.299 * android.graphics.Color.red(color) +

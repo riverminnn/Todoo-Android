@@ -8,7 +8,7 @@
     android:layout_marginVertical="6dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/white"
+    app:cardBackgroundColor="?attr/cardBackgroundColor"
     app:strokeWidth="0dp">
 
     <RelativeLayout
@@ -28,6 +28,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/google_sans"
+                android:textColor="?attr/textColorPrimary"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 tools:text="Todo Title" />
@@ -40,11 +41,10 @@
                 android:ellipsize="end"
                 android:fontFamily="@font/google_sans"
                 android:maxLines="1"
-                android:textColor="#757575"
+                android:textColor="?attr/textColorSecondary"
                 android:textSize="14sp"
                 tools:text="Todo content preview that only shows one line" />
 
-            <!-- Replace the existing tvDate TextView with this LinearLayout -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -57,7 +57,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/google_sans"
-                    android:textColor="#9E9E9E"
+                    android:textColor="?attr/textColorSecondary"
                     android:textSize="12sp"
                     tools:text="Created: Jan 1, 2023" />
 

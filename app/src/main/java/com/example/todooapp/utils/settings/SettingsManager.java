@@ -3,6 +3,8 @@ package com.example.todooapp.utils.settings;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import androidx.appcompat.app.AppCompatDelegate;
+
 public class SettingsManager {
     private static final String PREF_NAME = "todoo_settings";
 
@@ -15,6 +17,10 @@ public class SettingsManager {
     private static final String DEFAULT_FONT_SIZE = "Medium";
     private static final String DEFAULT_SORT_OPTION = "CREATED_DESC";
     private static final String DEFAULT_LAYOUT_TYPE = "List view";
+
+    // Add these fields
+    private static final String KEY_THEME_OPTION = "theme_option";
+    private static final String DEFAULT_THEME_OPTION = "SYSTEM";
 
     private SharedPreferences preferences;
 
@@ -52,5 +58,39 @@ public class SettingsManager {
 
     public void setLayoutType(String layoutType) {
         preferences.edit().putString(KEY_LAYOUT_TYPE, layoutType).apply();
+    }
+
+    // Add these methods
+    public ThemeOption getThemeOption() {
+        String themeName = preferences.getString(KEY_THEME_OPTION, DEFAULT_THEME_OPTION);
+        try {
+            return ThemeOption.valueOf(themeName);
+        } catch (IllegalArgumentException e) {
+            return ThemeOption.SYSTEM;
+        }
+    }
+
+    public void setThemeOption(ThemeOption themeOption) {
+        preferences.edit().putString(KEY_THEME_OPTION, themeOption.name()).apply();
+    }
+
+    // Helper method to apply theme
+    public void applyTheme() {
+        ThemeOption option = getThemeOption();
+        int nightMode;
+
+        switch (option) {
+            case LIGHT:
+                nightMode = AppCompatDelegate.MODE_NIGHT_NO;
+                break;
+            case DARK:
+                nightMode = AppCompatDelegate.MODE_NIGHT_YES;
+                break;
+            default:
+                nightMode = AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
+                break;
+        }
+
+        AppCompatDelegate.setDefaultNightMode(nightMode);
     }
 }
