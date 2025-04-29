@@ -70,7 +70,8 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         requireActivity().getWindow().setStatusBarColor(backgroundColor);
         requireActivity().getWindow().setNavigationBarColor(backgroundColor);
 
-        initializeViewModel();
+        todoViewModel = new ViewModelProvider(requireActivity()).get(TodoViewModel.class);
+
         initializeViews(view);
         setupRecyclerView();
         setupPinButton(view);
@@ -81,10 +82,6 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
         setupHideButton(view);
         setupSwipeRefresh(view);
         loadAllTodos();
-    }
-
-    private void initializeViewModel() {
-        todoViewModel = new ViewModelProvider(requireActivity()).get(TodoViewModel.class);
     }
 
     private void initializeViews(View view) {
