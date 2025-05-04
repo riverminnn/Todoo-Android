@@ -9,12 +9,21 @@ public class Test {
     private long id;
     private String name;
     private long createdDate;
+    private String imagePath;
 
     private double price;  // New property
     public Test(String name, double price) {
         this.name = name;
         this.price = price;
         this.createdDate = System.currentTimeMillis();
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 
     // Add getter and setter for price

@@ -5,11 +5,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.todooapp.R;
 import com.example.todooapp.data.model.Test;
 
@@ -67,6 +69,15 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
             listener.onTestLongClick(test);
             return true;
         });
+
+        if (test.getImagePath() != null && !test.getImagePath().isEmpty()) {
+            holder.ivTestImage.setVisibility(View.VISIBLE);
+            Glide.with(holder.itemView.getContext())
+                    .load(test.getImagePath())
+                    .into(holder.ivTestImage);
+        } else {
+            holder.ivTestImage.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -77,6 +88,7 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
     static class TestViewHolder extends RecyclerView.ViewHolder {
         TextView tvId, tvName, tvDate, tvPrice;
         ImageButton btnDelete;
+        ImageView ivTestImage;
 
         TestViewHolder(View itemView) {
             super(itemView);
@@ -85,6 +97,7 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
             tvDate = itemView.findViewById(R.id.tvDate);
             tvPrice = itemView.findViewById(R.id.tvPrice);
             btnDelete = itemView.findViewById(R.id.btnDelete);
+            ivTestImage = itemView.findViewById(R.id.ivTestImage);
         }
     }
 }

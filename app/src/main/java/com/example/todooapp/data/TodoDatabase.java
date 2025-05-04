@@ -11,7 +11,7 @@ import com.example.todooapp.data.model.Todo;
 import com.example.todooapp.data.dao.TodoDao;
 import com.example.todooapp.data.dao.TestDao;
 
-@Database(entities = {Todo.class, Test.class}, version = 15, exportSchema = false)
+@Database(entities = {Todo.class, Test.class}, version = 16, exportSchema = false)
 public abstract class TodoDatabase extends RoomDatabase {
     private static TodoDatabase instance;
 
