@@ -10,9 +10,22 @@ public class Test {
     private String name;
     private long createdDate;
 
-    public Test(String name) {
+    private double price;  // New property
+    public Test(String name, double price) {
         this.name = name;
+        this.price = price;
         this.createdDate = System.currentTimeMillis();
+    }
+
+    // Add getter and setter for price
+    public double getPrice() {
+        return price;
+    }
+
+    // ... existing getters and setters
+
+    public void setPrice(double price) {
+        this.price = price;
     }
 
     public long getId() {

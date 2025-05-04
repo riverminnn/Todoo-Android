@@ -4,6 +4,7 @@ package com.example.todooapp.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -49,10 +50,17 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
         Test test = tests.get(position);
         holder.tvId.setText("ID: " + test.getId());
         holder.tvName.setText(test.getName());
+        holder.tvPrice.setText(String.format(Locale.getDefault(), "$%.2f", test.getPrice()));
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault());
         String formattedDate = dateFormat.format(new Date(test.getCreatedDate()));
         holder.tvDate.setText(formattedDate);
+
+        holder.btnDelete.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onTestLongClick(test);
+            }
+        });
 
         holder.itemView.setOnClickListener(v -> listener.onTestClick(test));
         holder.itemView.setOnLongClickListener(v -> {
@@ -67,13 +75,16 @@ public class TestAdapter extends RecyclerView.Adapter<TestAdapter.TestViewHolder
     }
 
     static class TestViewHolder extends RecyclerView.ViewHolder {
-        TextView tvId, tvName, tvDate;
+        TextView tvId, tvName, tvDate, tvPrice;
+        ImageButton btnDelete;
 
         TestViewHolder(View itemView) {
             super(itemView);
             tvId = itemView.findViewById(R.id.tvId);
             tvName = itemView.findViewById(R.id.tvName);
             tvDate = itemView.findViewById(R.id.tvDate);
+            tvPrice = itemView.findViewById(R.id.tvPrice);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
         }
     }
 }
