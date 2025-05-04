@@ -72,6 +72,11 @@ public class TodoListFragment extends Fragment implements TodoAdapter.OnTodoClic
 
         todoViewModel = new ViewModelProvider(requireActivity()).get(TodoViewModel.class);
 
+        TextView btnTest = view.findViewById(R.id.btnTest);
+        btnTest.setOnClickListener(v -> {
+            Navigation.findNavController(view).navigate(R.id.action_todoListFragment_to_testFragment);
+        });
+
         initializeViews(view);
         setupRecyclerView();
         setupPinButton(view);

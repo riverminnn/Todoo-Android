@@ -5,6 +5,17 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/todoListFragment">
 
+    <!-- Add to nav_graph.xml inside the navigation element -->
+    <fragment
+        android:id="@+id/testFragment"
+        android:name="com.example.todooapp.fragments.TestFragment"
+        android:label="Test"
+        tools:layout="@layout/fragment_test" />
+
+    <action
+        android:id="@+id/action_todoListFragment_to_testFragment"
+        app:destination="@id/testFragment" />
+
     <action
         android:id="@+id/action_todoListFragment_to_hideFragment"
         app:destination="@id/hideFragment" />
