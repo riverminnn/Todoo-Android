@@ -8,7 +8,7 @@
     <!-- Add to nav_graph.xml inside the navigation element -->
     <fragment
         android:id="@+id/testFragment"
-        android:name="com.example.todooapp.fragments.TestFragment"
+        android:name="msv21a100100107.nguyenquangha.SinhVienFragment"
         android:label="Test"
         tools:layout="@layout/fragment_test" />
 
